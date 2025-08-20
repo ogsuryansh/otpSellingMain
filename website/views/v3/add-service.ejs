@@ -222,7 +222,22 @@
       
       try {
         // Make actual API call
-        const response = await fetch('/add-service', {
+        // Get backend URL - use environment variable or fallback to current origin
+        function getBackendUrl() {
+          // Check if we're on Vercel (production)
+          if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            // Use the same domain for Vercel deployment
+            return window.location.origin;
+          } else {
+            // Use localhost:3001 for local development
+            return 'http://localhost:3001';
+          }
+        }
+
+        const backendUrl = getBackendUrl();
+        console.log(`🔗 [DEBUG] Using backend URL: ${backendUrl}`);
+        
+        const response = await fetch(`${backendUrl}/add-service`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

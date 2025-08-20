@@ -219,6 +219,18 @@
       });
     });
 
+    // Get backend URL - use environment variable or fallback to current origin
+    function getBackendUrl() {
+      // Check if we're on Vercel (production)
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        // Use the same domain for Vercel deployment
+        return window.location.origin;
+      } else {
+        // Use localhost:3001 for local development
+        return 'http://localhost:3001';
+      }
+    }
+
     // Delete functionality
     async function deleteData(type, from, data) {
       if (confirm(`Are you sure you want to delete this ${type}?`)) {
@@ -231,8 +243,12 @@
             row.style.opacity = '0.5';
           }
           
+          // Get backend URL
+          const backendUrl = getBackendUrl();
+          console.log(`🔗 [DEBUG] Using backend URL: ${backendUrl}`);
+          
           // Call backend API to delete from MongoDB
-          const response = await fetch(`/delete-${type.slice(0, -1)}/${data.id}`, {
+          const response = await fetch(`${backendUrl}/delete-${type.slice(0, -1)}/${data.id}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json'
@@ -282,8 +298,12 @@
             row.style.opacity = '0.5';
           });
           
+          // Get backend URL
+          const backendUrl = getBackendUrl();
+          console.log(`🔗 [DEBUG] Using backend URL for bulk delete: ${backendUrl}`);
+          
           // Call backend API to delete all servers from MongoDB
-          const response = await fetch('/delete-all-servers', {
+          const response = await fetch(`${backendUrl}/delete-all-servers`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json'

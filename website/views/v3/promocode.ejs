@@ -194,6 +194,18 @@
     addPromocodeForm.reset();
   });
 
+  // Get backend URL - use environment variable or fallback to current origin
+  function getBackendUrl() {
+    // Check if we're on Vercel (production)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      // Use the same domain for Vercel deployment
+      return window.location.origin;
+    } else {
+      // Use localhost:3001 for local development
+      return 'http://localhost:3001';
+    }
+  }
+
   // Handle form submission
   addPromocodeForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -206,7 +218,10 @@
     };
 
     try {
-      const response = await fetch('/add-promocode', {
+      const backendUrl = getBackendUrl();
+      console.log(`🔗 [DEBUG] Using backend URL: ${backendUrl}`);
+      
+      const response = await fetch(`${backendUrl}/add-promocode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +256,10 @@
     }
 
     try {
-      const response = await fetch(`/delete-promocode/${id}`, {
+      const backendUrl = getBackendUrl();
+      console.log(`🔗 [DEBUG] Using backend URL for delete: ${backendUrl}`);
+      
+      const response = await fetch(`${backendUrl}/delete-promocode/${id}`, {
         method: 'DELETE'
       });
 
