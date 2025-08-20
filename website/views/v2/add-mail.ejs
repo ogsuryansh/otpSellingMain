@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <%- include("./partials/head") %>
+    <title>Add E-mail</title>
+  </head>
+  <body>
+    <%- include("./partials/alert") %>
+      <!-- Contact 1 - Bootstrap Brain Component
+                          Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+                      -->
+      <section class="py-3 py-md-5">
+        <div class="container">
+          <div class="row justify-content-md-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+              <h2 class="mb-2 display-5 text-center">Add Email address</h2>
+              <p class="text-secondary mb-3 text-center">
+                Add an email address to your bot. Your users will buy this one with the price provided by you.
+              </p>
+              <hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row justify-content-lg-center">
+          <div class="col-12 col-lg-9">
+            <div class="bg-white border rounded shadow-sm overflow-hidden">
+              <form id="add-form">
+                <div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+                  <div class="col-12">
+                    <label for="mail" class="form-label"
+                      >E-mail address <span class="text-danger">*</span></label
+                    >
+                    <input
+                    type="email"
+                    class="form-control"
+                    id="mail"
+                    name="mail"
+                    placeholder="address@mail.com"
+                    required
+                    />
+                </div>
+
+                <div class="col-12">
+                  <label for="password" class="form-label"
+                    >Mail Password <span class="text-danger"
+                      >*</span
+                    ></label
+                  >
+                  <input
+                  type="text"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  placeholder="12345abcd"
+                  required
+                  />
+              </div>
+
+                  <div class="col-12">
+                    <label for="price" class="form-label"
+                      >Price <span class="text-danger"
+                        >*</span
+                      ></label
+                    >
+                    <input
+                    type="number"
+                    class="form-control"
+                    id="price"
+                    name="price"
+                    placeholder="10"
+                    step="0.01"
+                    required
+                    />
+                </div>
+
+                          <div class="col-12">
+                            <div class="d-grid">
+                              <button
+                                class="btn btn-primary btn-md"
+                                type="submit"
+                                id="submit-btn"
+                                >
+                                Submit
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <%- include("./partials/script") %>
+            </body>
+          </html>

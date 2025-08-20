@@ -1,0 +1,170 @@
+<html>
+	<head>
+  <%- include("./partials/head") %>
+    <link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+		/>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.js"></script>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.css"
+			rel="stylesheet"
+		/>
+    <title>My SMM Services</title>
+	</head>
+	<body class="bg-light">
+	  <div id="alert" class="alert alert-dismissible fade show position-sticky top-0" role="alert" style="display:none;z-index:99999;">
+      <span id="alert-text"></span>
+      <button id="alert-close" type="button" class="btn-close"></button>
+    </div>
+		<!-- Credits - https://bootstrapbrain.com/component/bootstrap-table-card-example/#preview -->
+		<section class="py-3 py-md-5">
+			<div class="container">
+				<div class="d-flex justify-content-end">
+			    <% if(services.length) { txt = "Re-Import" %>
+			    <% } else { txt = "Import" } %>
+				  <button class="btn btn-primary mb-2 text-left" onclick="confirmImport('<%= txt %>')">
+				    <%= txt %> Smm Services </button>
+				 </div>
+				<div class="row justify-content-center">
+					<div class="col-12 col-lg-9 col-xl-8 mb-4">
+						<div class="card widget-card border-light shadow-sm">
+							<div class="card-body p-4">
+								<h5 class="card-title widget-card-title mb-4 border-bottom">
+									My SMM Services
+								</h5>
+								<% if(services?.length){ %>
+  								<div class="table-responsive">
+  									<table
+  										class="table table-striped bsb-table-xl text-wrap align-middle m-0"
+  									>
+  										<thead>
+  											<tr>
+  											  <th>#</th>
+  											  <th>Name</th>
+  											  <th>Description</th>
+  											  <th>Price</th>
+  												<th>Action</th>
+  											</tr>
+  										</thead>
+  										<tbody>
+  											<% services.forEach(function(myObject, index){ %>
+  											<tr id="smm-service-<%= myObject.id %>">
+  											<td><%= index + 1 %></td>
+  											<td><%= myObject.name %></td>
+  											<td><%= myObject.description %></td>
+  											<td><%= myObject.price %></td>
+  												<td>
+  													<a href="<%= url %>&page=my_smm_service&q=edit&pid=<%= myObject.id %>" class="badge rounded-pill bg-info text-decoration-none"
+  														>&#9998; Edit</a>
+  													<button class="badge rounded-pill bg-danger btn mt-2"
+  												onclick="deleteSmmService('<%= myObject.id %>', '<%= myObject.name %>')">&#9249; Delete</button>
+  												</td>
+  											</tr>
+  											<% }) %>
+  											
+  										</tbody>
+  									</table>
+  								</div>
+								<% } else { %>
+								  <p class="fs-6">You Don't have any SMM services...</p>
+								  <p>Click on the button at top right corner to automatically import available SMM Services from API </p>
+								<% } %>
+							</div>
+							<nav class="d-flex justify-content-center" aria-label="...">
+                <ul class="pagination">
+                  <% buttons.forEach((val)=>{ %>
+                  <% var isActive = "" %>
+                  <% if(val * 100 == offset + 100) { %>
+                  <%   isActive = "active" %>
+                  <% } %>
+                  <li class="page-item"><a class="page-link <%= isActive %>" href="<%= url %>&page=smm_services&q=page&offset=<%= val %>"><%= val %></a></li>
+                  <% }) %>
+                </ul>
+              </nav>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<%- include("./partials/my-data") %>
+		<script>
+		  function confirmImport(txt){
+		    var text = txt.toLowerCase() == "re-import" ? "Delete all the previous SMM service and Re-import" : "Import"
+		    swal(
+					{
+						title: "Auto Import SMM Services",
+						text: `Are you sure you want to ${text} all SMM services ?`,
+						type: "info",
+						showCancelButton: true,
+						closeOnConfirm: false,
+						showLoaderOnConfirm: true
+					},
+					autoImportServices
+				);
+		  }
+		  
+		  async function autoImportServices(){
+		    try{
+		      const req = await fetch(`${path.location}/v2?id=${path.query.id}&page=smm_services&q=import`);
+					const res = await req.json();
+
+					swal({
+						title: res.status == 1 ? "Success" : "Error",
+						text: res.message,
+						imageUrl: res.status == 1 ? "https://www.freeiconspng.com/uploads/success-icon-10.png" : "https://www.freeiconspng.com/uploads/high-resolution-photo-of-the-red-exclamation-point-error-23.png"
+					});
+		    } catch(e){
+		      console.error("Error importing services:", e);
+					swal({
+						title: "Error",
+						text: "Unable to auto import",
+						imageUrl: "https://www.freeiconspng.com/uploads/high-resolution-photo-of-the-red-exclamation-point-error-23.png"
+					});
+		    }
+		  }
+		  
+		  function deleteSmmService(id, name){
+		    swal(
+					{
+						title: "Delete SMM Service",
+						text: `Are you sure you want to delete this SMM service with the name of "${name}" ?`,
+						type: "info",
+						showCancelButton: true,
+						closeOnConfirm: false,
+						showLoaderOnConfirm: true
+					},
+					confirmDeleteService(id)
+				);
+		  }
+		  
+		  function confirmDeleteService(id){
+		    const myFunc = async () =>{
+  		    try{
+  		      const req = await fetch(`${path.location}/v2?id=${path.query.id}&page=smm_services&qid=${id}`, {
+  		        method: "delete"
+  		      });
+  					const res = await req.json();
+  
+  					swal({
+  						title: res.status == 1 ? "Success" : "Error",
+  						text: res.message,
+  						imageUrl: res.status == 1 ? "https://www.freeiconspng.com/uploads/success-icon-10.png" : "https://www.freeiconspng.com/uploads/high-resolution-photo-of-the-red-exclamation-point-error-23.png"
+  					});
+  					if(res.status == 1){
+  					  document.querySelector(`#smm-service-${id}`).remove()
+  					}
+  		    } catch(e){
+  		      console.error("Error deleting service:", e);
+  					swal({
+  						title: "Error",
+  						text: "Unable to delete SMM service",
+  						imageUrl: "https://www.freeiconspng.com/uploads/high-resolution-photo-of-the-red-exclamation-point-error-23.png"
+  					});
+  		    } 
+		    }
+		    return myFunc
+		  } 
+		</script>
+	</body>
+</html>

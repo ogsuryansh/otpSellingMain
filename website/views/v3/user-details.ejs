@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+  <link href="/styles/style.css" rel="stylesheet" />
+  <title>User Details | <%= user.username %></title>
+<style>
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  @keyframes scaleDown {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(0);
+    }
+  }
+
+  @keyframes slideInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(20%);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  dialog[open]::backdrop {
+    backdrop-filter: blur(5px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    dialog {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    dialog.showing {
+      animation: slideInUp 0.3s ease-out forwards;
+    }
+
+    dialog.closing {
+      animation: scaleDown 0.3s ease-in forwards;
+    }
+  }
+
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+  }
+</style>
+<style>
+.loader {
+width: 50px;
+padding: 8px;
+aspect-ratio: 1;
+border-radius: 50%;
+background: #258fb0;
+--_m: 
+  conic-gradient(#0000 10%,#000),
+  linear-gradient(#000 0 0) content-box;
+-webkit-mask: var(--_m);
+        mask: var(--_m);
+-webkit-mask-composite: source-out;
+        mask-composite: subtract;
+animation: l3 1s infinite linear;
+}
+@keyframes l3 {to{transform: rotate(1turn)}}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <nav class="bg-white p-3 py-4 mb-4 shadow-md sticky top-0 z-20">
+    <a href="/v3?id=<%= adminPath %>&q=page&page=all_users" class="font-bold">
+      <i class="bi bi-caret-left-fill"></i> Back
+    </a>
+  </nav>
+  <div class="bg-white drop-shadow-xl rounded-lg my-6 mx-4 md:mx-auto p-6 max-w-md">
+      <div class="flex flex-col items-center justify-around mb-4">
+        <div class="flex items-center justify-around md:gap-4">
+          <img src="<%= profile %>" alt="User Profile Picture" class="w-24 h-24 rounded-xl border-2 border-pink-500 bg-gray-950 drop-shadow my-auto">
+          <div class="mx-2">
+            <p class="break-word"><span class="font-bold">User ID:</span> <%= user.userId %></p>
+            <p class="break-word"><span class="font-bold">First Name:</span> <%= user.firstName %></p>
+            <p class="break-word"><span class="font-bold">Username:</span> <% if(user.username){ %> 
+            <a class="text-purple-800" href="https://telegram.me/<%= user.username %>" target="_blank">@<%= user.username %> <i class="p-1 bi bi-box-arrow-up-right"></i></a>
+            <% } else { %>
+            <small class="text-xs">No Username</small>
+            <% } %>
+            </p>
+          </div>
+        </div>
+        <% if(referrer){ %>
+          <p class="text-xs leading-4 px-4 mt-4">
+            <i class="bi bi-info-circle-fill mr-1"></i>
+            This User Was Invited By Another User Whose User ID Is <%= referrer.userId %><% if(referrer.username){ %>, And Username Was 
+            <a class="text-purple-800" href="https://telegram.me/<%= referrer.username %>">@<%= referrer.username %> 
+          <i class="bi bi-box-arrow-up-right text-xs"></i>
+          </a><% } %>
+        </p>
+        <% } %>
+      </div>
+      <hr />
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <div class="flex flex-col justify-between rounded-xl drop-shadow-xl bg-orange-500 font-semibold text-white h-24 w-[47%] p-2">
+              <span class="text-2xl flex justify-around items-center my-auto">
+                <i class="bi bi-cash"></i>
+                <span id="user-balance">&#8377;<%= user.balance %></span>
+              </span>
+              <span class="text-md p-1 text-center border-t border-orange-600">Balance</span>
+          </div>
+          <div class="flex flex-col justify-between rounded-xl drop-shadow-xl bg-green-500 font-semibold text-white h-24 w-[47%] p-2">
+              <span class="text-2xl flex justify-around items-center my-auto">
+                <i class="bi bi-cash-coin"></i>
+                &#8377;<%= totalDeposit %>
+              </span>
+              <span class="text-md p-1 text-center border-t border-green-600">Total Deposit</span>
+          </div>
+          <div class="flex flex-col justify-between rounded-xl drop-shadow-xl bg-blue-500 font-semibold text-white min-h-24 w-[47%] p-2">
+              <span class="text-2xl flex justify-around items-center my-auto py-1">
+                <i class="bi bi-bar-chart-line"></i>
+                <%= totalNumbers %>
+              </span>
+              <span class="text-md p-1 text-center border-t border-blue-600">Total Numbers</span>
+          </div>
+          <div class="flex flex-col justify-between rounded-xl drop-shadow-xl bg-red-500 font-semibold text-white min-h-24 w-[47%] p-2">
+              <span class="text-2xl flex justify-around items-center my-auto py-1">
+                <i class="bi bi-clock-history"></i>
+                <%= totalUsedNumbers %>
+              </span>
+              <span class="text-md p-1 text-center border-t border-red-600">Used Numbers</span>
+          </div>
+      </div>
+      <hr class="mt-4" />
+      <div class="py-3">
+        <p class="text-lg font-semibold leading-6 mb-2"><i class="bi bi-gear-wide-connected mr-2"></i>This User Has <%= JSON.parse(user.refers).length %> Refers (according to last update)</p>
+        <% if(JSON.parse(user.refers).length){ %>
+        <button onclick="showRefersModal()" class="bg-indigo-500 font-medium text-white px-5 py-2 flex w-auto mt-4 mb-2 mx-auto rounded shadow-md">
+          <i class="bi bi-people-fill mr-1"></i> View All Refers
+        </button>
+        <% } %>
+      </div>
+      <hr />
+      <div class="py-3 flex items-center justify-between gap-2">
+        <p class="text-xs font-medium w-1/2">
+          <i class="bi bi-info-circle mr-1"></i> This User Is Currently <span id="blockedTxt"><%= user.status == 2 ? "Blocked" : "Unblocked" %></span>
+        </p>
+        <button id="toggleBlockBtn" class="<%= user.status == 2 ? 'bg-green-500' : 'bg-red-500' %> font-medium text-white px-2 py-2 w-max my-2 mx-auto rounded-md shadow-md">
+          <i id="blocked-icon" class="bi bi-<%= user.status == 2 ? 'person-fill-check' : 'person-fill-dash' %>"></i> 
+          <span id="blocked-btn-txt"><%= user.status == 2 ? "Unblock" : "Block" %> User</span>
+        </button>
+      </div>
+      <hr />
+      <button onclick="showDiscount()" class="w-full bg-slate-500 text-white py-2 px-1 rounded-md shadow-md"><i class="bi bi-bag-heart-fill"></i> <span id="show-discount-btn">Special Discounts</span></button>
+      <div class="mt-4 flex gap-2 font-medium">
+          <button onclick="editBalance('add')" class="w-full bg-teal-500 text-white py-2 px-1 rounded-md shadow-md"><i class="bi bi-patch-plus-fill"></i> <span id="add-balance-btn">Add Balance</span>
+          </button>
+          <button onclick="editBalance('cut')" class="w-full bg-orange-500 text-white py-2 px-1 rounded-md shadow-md"><i class="bi bi-patch-minus-fill"></i> <span id="cut-balance-btn">Cut Balance</span>
+          </button>
+      </div>
+      <div class="mt-4 flex flex-col gap-2 font-medium">
+          <button onclick="viewAllNums()" class="w-full bg-pink-500 text-white py-2 rounded-md shadow-md"><i class="bi bi-clipboard-data-fill mr-1"></i> View User Numbers</button>
+          <button onclick="viewAllTrnx()" class="w-full bg-blue-500 text-white py-2 rounded-md shadow-md"><i class="bi bi-currency-exchange mr-1"></i> View User Transactions</button>
+      </div>
+  </div>
+  <!-- Modal credits: https://www.tailwindtoolbox.com/components/modal -->
+  <dialog id="modal" class="relative p-6 bg-white rounded-lg shadow-lg mt-6">
+    <button id="closeModalButtonTop" class="close-button">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-700 hover:text-gray-900" fill="none"
+        viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    <div id="modalBody"></div>
+  </dialog>
+<script>
+  let blocked = <%= user.status == 2 %>
+  let togglingBlock = false
+  const blockedTxt = document.getElementById("blockedTxt")
+  const toggleBlockBtn = document.getElementById("toggleBlockBtn")
+  const blockedIcon = document.getElementById("blocked-icon")
+  const blockedBtnTxt = document.getElementById("blocked-btn-txt")
+  toggleBlockBtn.addEventListener("click", ()=>{
+    const confirmToggle = window.confirm(`Are you sure you want to ${blocked ? "Unblock" : "Block"} this user ?`)
+    if(!confirmToggle) return;
+    if(togglingBlock) return;
+    togglingBlock = true
+    blockedBtnTxt.innerText = blocked ? "Unblocking..." : "Blocking..."
+    fetch("/v3?id=<%= adminPath %>&page=edit_user&q=toggle-block", {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ block: !blocked, userId: "<%= user.userId %>" })
+    })
+    .then(r=>r.json())
+    .then(res => {
+      alert(res.message)
+      if(res.status == 1){
+        blockedBtnTxt.innerText = blocked ? "Block User" : "Unblock User"
+        blockedTxt.innerText = blocked ? "Unblocked" : "Blocked"
+        blockedIcon.setAttribute("class", `bi bi-${blocked ? 'person-fill-dash' : 'person-fill-check'}`)
+        toggleBlockBtn.classList.toggle("bg-red-500")
+        toggleBlockBtn.classList.toggle("bg-green-500")
+        blocked = !blocked
+      }
+    })
+    .catch(err => {
+      console.error(err)
+      blockedBtnTxt.innerText = blocked ? "Block User" : "Unblock User"
+      alert(`Unable To Communicate With Server To ${blocked ? "Unblock" : "Block"} This User, Please Try Again Later...`)
+    })
+    .finally(()=>{
+      togglingBlock = false
+    })
+  })
+</script>
+<script>
+  let editingBalance = false;
+  function editBalance(type, msg = ""){
+    if(editingBalance) return;
+    editingBalance = true;
+    const myBtn = document.getElementById(`${type}-balance-btn`);
+    const myText = type[0].toUpperCase() + type.slice(1);
+    const amount = window.prompt(msg ? msg : `Enter The Amount You Would Like To ${type == "add" ? "Add To" : "Cut From"} User Wallet`)
+    if(!Number(amount)){
+      return editBalance(type, `Enter A Valid Amount In Number, How Much Would You Like To ${type == "add" ? "Add To" : "Cut From"} User Wallet`)
+    }
+    const confirmed = window.confirm(`Are You Sure You Want To ${type == "add" ? "Add" : "Cut" } ${amount} Rupees ${type == "add" ? "To" : "From"} User Wallet ?`)
+    if(!confirmed) {
+      editingBalance = false;
+      return;
+    }
+    myBtn.innerText = `${myText}ing...`
+    fetch("/v3?id=<%= adminPath %>&page=edit_user&q=edit-balance", {
+      method: "post",
+                        headers: {
+                          "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ type, amount, userId: "<%= user.userId %>" })
+    })
+    .then(r=>r.json())
+    .then(res => {
+      alert(res.message)
+      if(res.status == 1){
+        document.getElementById("user-balance").innerHTML = `&#8377;${res.newBalance}`
+      }
+    })
+    .catch(err => {
+      console.error(err)
+      alert(`Unable To Communicate With Server To ${type == "add" ? "Add Balance To" : "Cut Balance From"} This User Wallet, Please Try Again Later...`)
+    })
+    .finally(()=>{
+      myBtn.innerText = ` ${myText} Balance`
+      editingBalance = false
+    })
+  }
+</script>
+<script>
+  const modal = document.getElementById("modal");
+  const closeModalButtonTop = document.getElementById(
+    "closeModalButtonTop"
+  );
+  closeModalButtonTop.addEventListener("click", closeModal);
+  function closeModal() {
+    modal.classList.remove("showing");
+    modal.classList.add("closing");
+    modal.addEventListener(
+      "animationend",
+      () => {
+        modal.close();
+        modal.classList.remove("closing");
+        document.getElementById("modalBody").innerHTML = "";
+      },
+      { once: true }
+    );
+  }
+  function openModal(modalHtml = "") {
+    modal.classList.remove("closing");
+    modal.showModal();
+    document.getElementById("modalBody").innerHTML = modalHtml
+    modal.classList.add("showing");
+  }
+</script>
+<% if(JSON.parse(user.refers).length){ %>
+<script>
+  const refers = <%- user.refers %>
+  var refersListHtml = ""
+  function showRefersModal(){
+    if(!refersListHtml){
+      refers.forEach((obj)=>{
+        refersListHtml += `<div class="border border-gray-100 rounded-md shadow-md p-2 px-3 flex flex-col items-center gap-2">
+          <div class="flex items-center gap-2">
+          <i class="bi bi-${obj.earned ? 'person-lines-fill' : 'person-fill-gear'} text-2xl mt-1 mr-2"></i>
+          <div class="flex flex-col text-sm">
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">User Id: </span>
+              ${obj.userId}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">User's Name: </span>
+              ${obj.name}
+            </p>
+          </div>
+          </div>
+          <p class="w-full text-xs text-gray-700 border-t border-gray-500 pt-1"><span class="font-medium text-sm text-gray-900">Joined On:</span> ${new Date(obj.createdAt).toDateString()}, ${new Date(obj.createdAt).toLocaleTimeString()}</p>
+        </div>`
+      })
+    }
+    openModal(`<h2 class="mb-4 text-lg font-semibold">Refers Of <%= user.firstName %></h2><div class="flex flex-col gap-2 py-3 px-2">${refersListHtml}</div>`)
+  }
+</script>
+<% } %>
+<script>
+  let histories = {
+    trnx: {
+      data: [],
+      isLast: false
+    },
+    numbers: {
+      data: [],
+      isLast: false
+    }
+  };
+  var viewMoreBtn = `<button id="viewMoreBtn" class="flex items-center justify-center text-center font-semibold text-teal-700 border border-gray-200 w-100 py-3 px-10 mx-auto mt-3 rounded-md drop-shadow-lg hover:bg-teal-700 hover:text-white">View More <i class="bi bi-arrow-down-circle ml-2 text-xl font-bold"></i></button>`
+  var loaderHtml = "<div id='loader' class='flex w-full items-center justify-center my-6 min-w-[70vw] md:min-w-[250px]'><div class='loader'></div></div>"
+  var modalBody = document.getElementById("modalBody")
+  function viewAllNums(force = true, offset = 0){
+    const generateListHtml = (data) => {
+      let listHtml = ""
+      data.forEach((obj)=>{
+        listHtml += `<div class="border border-gray-100 rounded-md shadow-md p-2 px-3 flex flex-col gap-2">
+          <div class="flex items-center gap-2 px-2 pt-1">
+          <img src="${obj.logo}" alt="service logo" class="h-10 w-10 rounded-md" />
+          <div class="flex flex-col flex-1 w-full text-sm">
+            <p class="text-gray-700">
+              <i class="bi bi-telephone mr-1"></i><span class="font-medium text-gray-800">${obj.number}</span>
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Service: </span>
+              ${obj.service}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Server: </span>
+              ${obj.server}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Amount: </span>
+              &#8377;${obj.amount}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Messages: </span>
+              ${obj.messages?.length ? obj.messages.map(val => val).join(", ") : "No Message Received..."}
+            </p>
+            <p class="text-gray-700 text-xs font-medium mt-2">
+              <i class="bi bi-info-circle-fill"></i>
+              This Number Was ${obj.cancelled ? "Cancelled" : "No Cancelled"} ${obj.refund ? "And A Refund Was Issued" : ""}
+            </p>
+          </div>
+          </div>
+          <p class="w-full text-xs text-gray-700 border-t border-gray-500 pt-1"><span class="font-medium text-sm text-gray-900">Issued On:</span> ${new Date(obj.createdAt).toDateString()}, ${new Date(obj.createdAt).toLocaleTimeString()}</p>
+        </div>`
+      })
+      return listHtml
+    }
+    if(histories.numbers.data.length && force){
+      var historyHtml = generateListHtml(histories.numbers.data)
+      if(!histories.numbers.isLast){
+        historyHtml += viewMoreBtn;
+      }
+      openModal(`<h2 class="mb-4 text-lg font-semibold">Transactions Of <%= user.firstName %></h2>${historyHtml}`);
+      if(document.getElementById("viewMoreBtn")) document.getElementById("viewMoreBtn").addEventListener("click", ()=>{
+        viewAllTrnx(false, histories.trnx.data.length)
+      })
+      return;
+    }
+    else if(force && !histories.trnx.data.length) openModal(`<h2 class="mb-4 text-lg font-semibold">Numbers History Of <%= user.firstName %></h2>`);
+    if(document.getElementById("viewMoreBtn")){ 
+      document.getElementById("viewMoreBtn").remove();
+    }
+    modalBody.innerHTML += loaderHtml;
+    fetch(`/v3?id=<%= adminPath %>&q=getHistroy&history=numbers&userId=<%= user.userId %>&offset=${offset}`)
+    .then(r=>r.json())
+    .then(res => {
+      histories.numbers.data = [...histories.numbers.data, ...res.data]
+      histories.numbers.isLast = res.isLast
+      var historyHtml = generateListHtml(res.data)
+      if(!histories.numbers.isLast){
+        historyHtml += viewMoreBtn;
+      }
+      document.getElementById("loader").remove()
+      if(res.data.length) { 
+        modalBody.innerHTML += historyHtml;
+      } else if(!histories.numbers.data.length) {
+        modalBody.innerHTML += "<p class='flex w-full text-sm text-gray-700 font-medium mt-2'>This User Doesn't Have Any Numbers History...</p>"
+      }
+      if(document.getElementById("viewMoreBtn")) document.getElementById("viewMoreBtn").addEventListener("click", ()=>{
+        viewAllNums(false, histories.numbers.data.length)
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      modalBody.innerHTML = "<p>Unable To Communicate With Server To Fetch This User's Numbers History</p>"
+    })
+  }
+  
+  function viewAllTrnx(force = true, offset = 0){
+    const generateListHtml = (data) => {
+      let listHtml = ""
+      data.forEach((obj)=>{
+        listHtml += `<div class="border border-gray-100 rounded-md shadow-md p-2 px-3 flex flex-col gap-2">
+          <div class="flex items-center gap-2 px-2 pt-1">
+          <div class="w-min text-xl ${obj.type == "credit" ? "text-green-600" : "text-red-600"} text-start font-semibold mt-1 mr-2">${obj.type == "credit" ? "+" : "-"}${obj.amount}</div>
+          <div class="flex flex-col flex-1 w-full text-sm">
+            <p class="text-gray-700">
+              <i class="bi bi-envelope-open mr-1"></i><span class="font-medium text-gray-800">${obj.message}</span>
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Closing Balance: </span>
+              &#8377;${obj.closingBalance}
+            </p>
+          </div>
+          </div>
+          <p class="w-full text-xs text-gray-700 border-t border-gray-500 pt-1"><span class="font-medium text-sm text-gray-900">Apply Date:</span> ${new Date(obj.createdAt).toDateString()}, ${new Date(obj.createdAt).toLocaleTimeString()}</p>
+        </div>`
+      })
+      return listHtml
+    }
+    if(histories.trnx.data.length && force){
+      var historyHtml = generateListHtml(histories.trnx.data)
+      if(!histories.trnx.isLast){
+        historyHtml += viewMoreBtn;
+      }
+      openModal(`<h2 class="mb-4 text-lg font-semibold">Transactions Of <%= user.firstName %></h2>${historyHtml}`);
+      if(document.getElementById("viewMoreBtn")) document.getElementById("viewMoreBtn").addEventListener("click", ()=>{
+        viewAllTrnx(false, histories.trnx.data.length)
+      })
+      return;
+    }
+    else if(force && !histories.trnx.data.length) openModal(`<h2 class="mb-4 text-lg font-semibold">Transactions Of <%= user.firstName %></h2>`);
+    if(document.getElementById("viewMoreBtn")){ 
+      document.getElementById("viewMoreBtn").remove();
+    }
+    modalBody.innerHTML += loaderHtml;
+    fetch(`/v3?id=<%= adminPath %>&q=getHistroy&history=transactions&userId=<%= user.userId %>&offset=${offset}`)
+    .then(r=>r.json())
+    .then(res => {
+      histories.trnx.data = [...histories.trnx.data, ...res.data]
+      histories.trnx.isLast = res.isLast
+      var historyHtml = generateListHtml(res.data)
+      if(!histories.trnx.isLast){
+        historyHtml += viewMoreBtn;
+      }
+      document.getElementById("loader").remove()
+      if(res.data.length) { 
+        modalBody.innerHTML += historyHtml;
+      } else if(!histories.trnx.data.length) {
+        modalBody.innerHTML += "<p class='flex w-full text-sm text-gray-700 font-medium mt-2'>This User Doesn't Have Any Transaction History...</p>"
+      }
+      if(document.getElementById("viewMoreBtn")) document.getElementById("viewMoreBtn").addEventListener("click", ()=>{
+        viewAllTrnx(false, histories.trnx.data.length)
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      modalBody.innerHTML = "<p>Unable To Communicate With Server To Fetch This User's Transactions History</p>"
+    })
+  }
+</script>
+
+<script>
+  let myDiscounts = []
+  let servers = []
+  const services = {}
+  function showDiscount(force = true){
+    const addDiscountHtml = () => {
+      return `<form id="add-service-discount" class="shadow-md border py-3 px-2 mb-4 rounded-md">
+        
+        <div class="flex items-center justify-around gap-2">
+        <label for="server">Select Server: </label>
+        <select name="server" id="select-server" class="px-2 py-1 border bg-gray-100 hover:outline-none" required="true">
+          <option value="0">Select Here </option>
+          ${servers.map((obj ,i)=> `<option value="${obj.id}">${obj.name}</option>` ).join("\n")}
+        </select>
+        </div>
+        
+        <div class="flex items-center justify-around gap-2 mt-4">
+        <label for="service">Select Service: </label>
+        <select name="service" id="select-service" class="w-min max-w-[48%] px-2 py-1 border bg-gray-100 hover:outline-none" required="true">
+          <option value="0">Select Server First</option>
+        </select>
+        </div>
+        
+        <div class="relative mt-5">
+          <label for="discount" class="font-medium text-xs absolute -top-2 left-2 bg-white px-1">Discount Percentage</label>
+          <input type="number" step="0.01" name="discount" id="discount-input" placeholder="10.5" class="w-full py-2 px-2 border border-gray-300 rounded-lg hover:outline-blue-500" required="true" />
+        </div>
+        
+        <button class="mt-5 py-1.5 px-2.5 bg-indigo-500 hover:bg-white border-2 border-indigo-500 text-white hover:text-indigo-500 block ml-auto mr-2 rounded-md">Add Discount</button>
+      </form>`
+    }
+    const generateListHtml = (data) => {
+      let listHtml = ""
+      data.forEach((obj)=>{
+        listHtml += `<div class="border border-gray-100 rounded-md shadow-md p-2 px-3 flex flex-col gap-2" id="service-discount-${obj.id}">
+          <div class="flex items-center gap-2 px-2 pt-1">
+          <div class="flex flex-col flex-1 w-full text-sm">
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Service Name: </span>${obj.service_name}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Server Name: </span>
+              ${obj.server_name}
+            </p>
+            <p class="text-gray-700">
+              <span class="font-medium text-gray-900">Discount: </span>
+              ${obj.discount}%
+            </p>
+          </div>
+          <button onclick="deleteServiceDiscount('${obj.discount}', '${obj.server_name}', '${obj.service_name}', '${obj.id}')" class="border border-red-500 rounded-lg shadow-lg px-2 py-1 text-red-500 text-2xl hover:text-white hover:bg-red-500"><i class="bi bi-trash"></i></button>
+          </div>
+          <p class="w-full text-xs text-gray-700 border-t border-gray-500 pt-1"><span class="font-medium text-sm text-gray-900">Created On:</span> ${new Date(obj.createdAt).toDateString()}, ${new Date(obj.createdAt).toLocaleTimeString()}</p>
+        </div>`
+      })
+      return listHtml;
+    }
+    
+    if(force) openModal(`<h2 class="mb-4 text-lg font-semibold">Special Discounts Of <%= user.firstName %></h2>`);
+    modalBody.innerHTML += loaderHtml;
+   
+  if(myDiscounts.length && servers.length){
+    document.getElementById("loader").remove()
+    modalBody.innerHTML += addDiscountHtml()
+    var historyHtml = generateListHtml(myDiscounts)
+    modalBody.innerHTML += historyHtml;
+    return;
+  }
+    
+  fetch(`/v3?id=<%= adminPath %>&q=getServiceDiscounts&userId=<%= user.userId %>`)
+    .then(r=>r.json())
+    .then(res => {
+      servers = res.servers
+      myDiscounts = res.data
+      document.getElementById("loader").remove()
+      modalBody.innerHTML += addDiscountHtml()
+      var historyHtml = generateListHtml(res.data)
+      if(res.data.length) { 
+        modalBody.innerHTML += historyHtml;
+      } else if(!myDiscounts.length) {
+        modalBody.innerHTML += "<p class='flex w-full text-sm text-gray-700 font-medium mt-2'>This User Doesn't Have Any Service Discounts...</p>"
+      }
+      document.getElementById("select-server").addEventListener("change", (e)=>{
+        const server = e.target.value
+        const servicesList = document.getElementById("select-service")
+        if(server == "0") {
+          servicesList.innerHTML = "<option value='0'>Select Server First</option>"
+          return;
+        }
+        if(services[server]) {
+          if(!services[server].length) {
+            servicesList.innerHTML = "<option value='0'>No Services Available</option>"
+          } else {
+            servicesList.innerHTML = ""
+            services[server].forEach(obj => {
+              if(obj.name.trim()) servicesList.innerHTML += `<option value="${obj.id}">${obj.name}</option>`
+            })
+          }
+          return;
+        }
+        
+        fetch(`/v3?id=<%= adminPath %>&q=getServiceDiscounts&userId=<%= user.userId %>&require=services&server=${server}`)
+        .then(r => r.json())
+        .then(res => {
+          if(res.status != 1) return;
+          services[server] = res.data;
+          if(!res.data.length) {
+            servicesList.innerHTML = "<option value='0'>No Services Available</option>"
+          } else {
+            servicesList.innerHTML = ""
+            res.data.forEach(obj => {
+            if(obj.name.trim()) servicesList.innerHTML += `<option value="${obj.id}">${obj.name}</option>`
+            })
+          }
+        })
+        .catch(err => {
+          console.error(err)
+          alert("Unable to get services list of selected server. Please Try Again")
+        })
+      })
+      
+      document.getElementById("add-service-discount").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const server = document.getElementById("select-server").value;
+        const service = document.getElementById("select-service").value;
+        const discount = document.getElementById("discount-input").value;
+        
+        fetch(`/v3?id=<%= adminPath %>&page=addServiceDiscount&userId=<%= user.userId %>`, {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            server,
+            service,
+            discount
+          })
+        })
+        .then(r => r.json())
+        .then(res => {
+          if(res.status != 1) return alert(res.message)
+          myDiscounts.unshift(res.data)
+          modalBody.innerHTML += generateListHtml([res.data])
+        })
+        .catch(err => {
+          alert("Unable To Add Discount. Please Try Again")
+        })
+        
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      modalBody.innerHTML = "<p>Unable To Communicate With Server To Fetch This User's Service Discounts</p>"
+    })
+  }
+  
+  function deleteServiceDiscount(discount, server, service, id) {
+    
+    let confirmed = window.confirm(`Are You Sure You Want To Delete The ${discount}% discount In ${server} From "${service}" Service For this User ?`)
+    
+    if(!confirmed) return;
+    
+    fetch(`/v3?id=<%= adminPath %>&page=serviceDiscount&userId=<%= user.userId %>&qid=${id}`, {
+      method: "delete",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    .then(r => r.json())
+    .then(res => {
+      if(res.status != 1) return alert(res.message);
+      document.getElementById(`service-discount-${id}`).remove();
+      myDiscounts = myDiscounts.filter(obj => obj.id != id)
+    })
+    .catch(err => {
+      alert("Unable To Communicate With Server To Delete Discount. Please Try Again")
+    })
+  }
+</script>
+</body>
+</html>

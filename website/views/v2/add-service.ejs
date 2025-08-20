@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <%- include("./partials/head") %>
+    <title>Add Service</title>
+  </head>
+  <body>
+    <%- include("./partials/alert") %>
+    <!-- Contact 1 - Bootstrap Brain Component
+            Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+        -->
+    <section class="py-3 py-md-5">
+      <div class="container">
+        <div class="row justify-content-md-center">
+          <div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+            <h2 class="mb-2 display-5 text-center">Add Service</h2>
+            <p class="text-secondary mb-3 text-center">
+              Select a server and add a service to it. You can later connect an API to this service. Users will be buying this service using their 💎
+            </p>
+            <hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row justify-content-lg-center">
+        <div class="col-12 col-lg-9">
+          <div class="bg-white border rounded shadow-sm overflow-hidden">
+            <form id="add-form">
+              <div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+
+                <div class="input-group">
+                  <label class="input-group-text" for="server"
+                    >Select Server</label
+                  >
+                  <select
+                    class="form-select"
+                    id="server"
+                    name="server"
+                    >
+                    <% servers.forEach(function (obj, i){ %>
+                    <% var isSelected = obj.id == myService?.server_id ? "selected" : "" %>
+                        <option value="<%= obj.id %>" <%= isSelected %> ><%= obj.server_name %></option>
+                          <% }) %>
+
+                          </select>
+                        </div>
+
+                        <div class="col-12">
+                          <label for="service_id" class="form-label"
+                            >Service ID <span class="text-danger">*</span></label
+                          >
+                          <input
+                          type="text"
+                          class="form-control"
+                          id="service_id"
+                          name="service_id"
+                          placeholder="Other"
+                          value="<%= myService?.service_id %>"
+                          required
+                          />
+                      </div>
+                      
+                        <div class="col-12">
+                          <label for="name" class="form-label"
+                            >Service Name <span class="text-danger">*</span></label
+                          >
+                          <input
+                          type="text"
+                          class="form-control"
+                          id="name"
+                          name="name"
+                          placeholder="My Service"
+                          value="<%= myService?.name %>"
+                          required
+                          />
+                      </div>
+
+                      <div class="col-12">
+                        <label for="logo" class="form-label"
+                          >Service Logo <span class="text-danger">*</span></label
+                        >
+                        <input
+                        type="url"
+                        class="form-control"
+                        id="logo"
+                        name="logo"
+                        placeholder="Service Logo Url"
+                        value="<%= myService?.logo %>"
+                        required
+                        />
+                    </div>
+
+                    <div class="col-12">
+                      <label for="code" class="form-label"
+                        >Service Code <span class="text-danger">*</span></label
+                      >
+                      <input
+                      type="text"
+                      class="form-control"
+                      id="code"
+                      name="code"
+                      placeholder="Serv1"
+                      value="<%= myService?.code %>"
+                      required
+                      />
+                  </div>
+
+                  <div class="col-12">
+                    <label for="description" class="form-label"
+                      >Service  Description <span class="text-danger">*</span></label
+                    >
+                    <textarea
+                      class="form-control"
+                      id="description"
+                      name="description"
+                      placeholder="My Small Service Description..."
+                      rows="2"
+                      required
+                      ><%= myService?.description %></textarea>
+                  </div>
+
+                  <div class="col-12">
+                    <label for="price" class="form-label"
+                      >Service Price <span class="text-danger"
+                        >*</span
+                      ></label
+                    >
+                    <input
+                    type="number"
+                    class="form-control"
+                    id="price"
+                    name="price"
+                    placeholder="10"
+                    step="0.01"
+                    value="<%= myService?.price %>"
+                    required
+                    />
+                </div>
+                
+                  <div class="col-12">
+                    <label for="cancel_disable" class="form-label"
+                      >Disable Cancellation till __ minutes</label
+                    >
+                    <input
+                    type="number"
+                    class="form-control"
+                    id="cancel_disable"
+                    name="cancel_disable"
+                    placeholder="0"
+                    value="<%= myService?.cancel_disable %>"
+                    required
+                    />
+                </div>
+
+                <div class="col-12">
+                  <div class="d-grid">
+                    <button
+                      class="btn btn-primary btn-md"
+                      type="submit"
+                      id="submit-btn"
+                      >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <%- include("./partials/script") %>
+  </body>
+</html>

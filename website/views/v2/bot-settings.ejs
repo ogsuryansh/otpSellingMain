@@ -1,0 +1,467 @@
+<!doctype html>
+<html>
+  <head>
+    <%- include("./partials/head") %>
+      <title>Bot Settings</title>
+    </head>
+	<body>
+    <%- include("./partials/alert") %>
+		<!-- Contact 1 - Bootstrap Brain Component
+    Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+-->
+		<section class="py-3 py-md-5">
+			<div class="container">
+				<div class="row justify-content-md-center">
+					<div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+						<h2 class="mb-2 display-5 text-center">Bot Settings</h2>
+						<p class="text-secondary mb-3 text-center">
+							Add payment details or edit your bot channel or support url for
+							users.
+						</p>
+						<hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+					</div>
+				</div>
+			</div>
+
+			<div class="container">
+				<div class="row justify-content-lg-center">
+					<div class="col-12 col-lg-9">
+						<div class="bg-white border rounded shadow-sm overflow-hidden">
+							<form id="add-form">
+								<div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+									<div class="col-12">
+										<label for="channel" class="form-label"
+											>Telegram Channel
+											<span class="text-danger">*</span></label
+										>
+										<div class="input-group">
+											<span class="input-group-text" id="basic-addon1">@</span>
+											<input
+												type="text"
+												class="form-control"
+												id="channel"
+												name="channel"
+												placeholder="MyChannel"
+												value="<%= setting.channel %>"
+												aria-label="Channel"
+												aria-describedby="basic-addon1"
+												required
+											/>
+										</div>
+									</div>
+
+									<div class="col-12">
+										<label for="supportUrl" class="form-label"
+											>Support URL <span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control"
+											id="supportUrl"
+											name="supportUrl"
+											placeholder="Support Url for Users"
+											value="<%= setting.supportUrl %>"
+											required
+										/>
+									</div>
+									
+									<hr class="mb-0" />
+									<div class="col-12">
+										<label for="referCommission" class="form-label"
+											>Refer Commission % for deposits <span class="text-danger">*</span></label
+										>
+										<div class="input-group">
+										<input
+											type="number"
+											class="form-control"
+											id="referCommission"
+											name="referCommission"
+											placeholder="Refer Earning Commission"
+											value="<%= setting.referCommission %>"
+											step="0.01"
+											required
+										/>
+											<span class="input-group-text" id="basic-addon1">%</span>
+									  </div>
+									</div>
+									
+									<div class="col-12">
+										<label for="withdrawLimit" class="form-label"
+											>Refer Earning Withdrawal Limit <span class="text-danger">*</span></label
+										>
+										<input
+											type="number"
+											class="form-control"
+											id="withdrawLimit"
+											name="withdrawLimit"
+											placeholder="Withdrawal Limit of Referral Earnings"
+											value="<%= setting.withdrawLimit %>"
+											required
+										/>
+									</div>
+									
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="smmPanel"
+											name="smmPanel"
+											<%= setting.smmPanel ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="smmPanel"
+											>Enable SMM panel for your bot </label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="smmUrl" class="form-label"
+											>API URL of your smm API <span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control smmPanel"
+											id="smmUrl"
+											name="smmUrl"
+											placeholder="https://smmpanel.com/v2?api_key=1234abcxxx"
+											value="<%= setting.smmUrl %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<label for="smmProfit" class="form-label"
+											>Profit Margin for SMM Services 
+											<span class="text-danger">*</span></label
+										>
+										<div class="input-group">
+										<input
+											type="number"
+											class="form-control smmPanel"
+											id="smmProfit"
+											name="smmProfit"
+											placeholder="Profit percentage"
+											step="0.0.1"
+											value="<%= setting.smmProfit %>"
+										/>
+										<span class="input-group-text" id="basic-addon1">%</span>
+									  </div>
+									</div>
+									
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="manual"
+											name="manual"
+											<%= setting.manual ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="manual"
+											>Accept Manual Payments from users</label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="manualUpi" class="form-label"
+											>UPI ID for Manual Payment
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control manual"
+											id="manualUpi"
+											name="manualUpi"
+											placeholder="1234567890@upi"
+											value="<%= setting.manualUpi %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<label for="manualQr" class="form-label"
+											>QR Code Url for Manual Payment
+										</label
+										>
+										<input
+											type="url"
+											class="form-control manual"
+											id="manualQr"
+											name="manualQr"
+											placeholder="Qr Code Url"
+											value="<%= setting.manualQr %>"
+										/>
+									</div>
+
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="paytm"
+											name="paytm"
+											<%= setting.paytm ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="paytm"
+											>Accept Paytm Payments from users</label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="paytmMid" class="form-label"
+											>Paytm Merchant ID
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control paytm"
+											id="paytmMid"
+											name="paytmMid"
+											placeholder="1234567990..."
+											value="<%= setting.paytmMid %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<label for="paytmUpi" class="form-label"
+											>Paytm Merchant UPI ID
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control paytm"
+											id="paytmUpi"
+											name="paytmUpi"
+											placeholder="Paytm Merchant Upi Id"
+											value="<%= setting.paytmUpi %>"
+											required
+										/>
+									</div>
+
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="bharatpe"
+											name="bharatpe"
+											<%= setting.bharatpe ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="bharatpe"
+											>Accept BharatPe Payments from users</label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="bharatpeMid" class="form-label"
+											>BharatPe Merchant ID
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control bharatpe"
+											id="bharatpeMid"
+											name="bharatpeMid"
+											placeholder="123456..."
+											value="<%= setting.bharatpeMid %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<label for="bharatpeMtoken" class="form-label"
+											>BharatPe Merchant Token
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control bharatpe"
+											id="bharatpeMtoken"
+											name="bharatpeMtoken"
+											placeholder="abc123xxx..."
+											value="<%= setting.bharatpeMtoken %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<label for="bharatpeUpi" class="form-label"
+											>BharatPe UPI ID
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control bharatpe"
+											id="bharatpeUpi"
+											name="bharatpeUpi"
+											placeholder="0000000000@upi"
+											value="<%= setting.bharatpeUpi %>"
+											required
+										/>
+									</div>
+									
+									<div class="col-12">
+										<label for="bharatpeQr" class="form-label"
+											>BharatPe QR Code Url
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control bharatpe"
+											id="bharatpeQr"
+											name="bharatpeQr"
+											placeholder="Qr Code Url"
+											value="<%= setting.bharatpeQr %>"
+											required
+										/>
+									</div>
+
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="crypto"
+											name="crypto"
+											<%= setting.crypto ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="crypto"
+											>Accept Crypto TRX Payments from users</label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="cryptoHash" class="form-label"
+											>Crypto Api key <span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control crypto"
+											id="cryptoHash"
+											name="cryptoHash"
+											placeholder="abcd123..."
+											value="<%= setting.cryptoHash %>"
+											required
+										/>
+									</div>
+									
+									
+									<hr class="mb-0" />
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="upi"
+											name="upi"
+											<%= setting.upi ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="upi"
+											>Accept UPI Payments from users</label
+										>
+									</div>
+									
+									<div class="col-12">
+										<label for="upiApi" class="form-label"
+											><a target="_blank" href="https://apihome.in/">UPI</a> API key <span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control upi"
+											id="upiApi"
+											name="upiApi"
+											placeholder="abcd123..."
+											value="<%= setting.upiApi %>"
+											required
+										/>
+									</div>
+									
+									<div class="col-12">
+										<label for="upiPostback" class="form-label"
+											>Payment Webhook Receiver</label
+										>
+										<input
+											type="url"
+											class="form-control upi"
+											id="upiPostback"
+											name="upiPostback"
+											placeholder="abcd123..."
+											value="<%= postback_url %>"
+											readonly
+										/>
+									  <div class="form-text">Use the above URL to set webhook for receiving payment notification.</div>
+									</div>
+									
+									
+									<div class="col-12">
+										<label for="upiIp" class="form-label"
+											>API Whitelist IP</label
+										>
+										<input
+											type="text"
+											class="form-control upi"
+											id="upiIp"
+											name="upiIp"
+											placeholder="abcd123..."
+											value="<%= ipv6_address %>"
+											readonly
+										/>
+										<div class="form-text">Use the above IP Address in IP whitelist.</div>
+									</div>
+
+									<div class="col-12">
+										<div class="d-grid">
+											<button
+												class="btn btn-primary btn-md"
+												type="submit"
+												id="submit-btn"
+											>
+												Submit
+											</button>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+  <%- include("./partials/script") %>
+  <script>
+    var checkBoxes = ["manual", "paytm", "bharatpe", "crypto", "smmPanel", "upi"]
+    
+    window.onload = function(){
+      checkBoxes.forEach((val)=>{
+        handleChecks({
+          target: document.getElementById(val)
+        })
+      })
+    }
+    
+    checkBoxes.forEach((val)=>{
+      document.getElementById(val).addEventListener("change", handleChecks)
+    })
+    
+    function handleChecks(e){
+      var inputs = document.querySelectorAll("." + e.target.id)
+      var isChecked = e.target.checked
+      inputs.forEach((el)=>{
+        if(isChecked){
+          if(el.id != "manualQr") el.setAttribute("required", "true")
+          el.removeAttribute("disabled")
+        }else{
+          el.setAttribute("disabled", "true")
+          el.removeAttribute("required")
+        }
+      })
+    }
+  </script>
+	</body>
+</html>

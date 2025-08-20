@@ -1,0 +1,29 @@
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Mail | Inbox</title>
+		<style>
+			body {
+				background-color: #fff;
+			}
+			.mail-content {
+				background-color: #d3f7fa;
+				border: 1px solid #96f1f7;
+				padding: 14px 12px;
+				border-radius: 10px;
+				margin: 0 16px 16px;
+				word-break: break-word;
+				box-shadow: 4px 4px 4px 2px #e7e7e7;
+			}
+		</style>
+	</head>
+	<body>
+	  <% if(mailMessage.value){ %>
+		<div id="mail-value" class="mail-content"><b>Content: </b><%= mailMessage.value %></div>
+		<% } %>
+		<% if(mailMessage.full_message){ %>
+		<div id="mail-fulltext" class="mail-content"><%- mailMessage.full_message %></div>
+		<% } %>
+	</body>
+</html>

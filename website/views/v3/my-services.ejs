@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>My Services - OTP Bot</title>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Include Navbar -->
+  <%- include('partials/navbar', { page: 'my-services' }) %>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">My Services</h1>
+      <p class="text-gray-600">Manage your servers and services</p>
+    </div>
+
+    <!-- Services Content -->
+    <div class="space-y-8">
+      <% data.forEach(function(listItem){ %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <!-- Section Header -->
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-900"><%= listItem.name %></h2>
+          </div>
+
+          <!-- Section Content -->
+          <div class="p-6">
+            <% if(listItem.data?.length){ %>
+              <!-- Search Bar for Services -->
+              <% if(listItem.name.includes("Services")) { %>
+                <div class="mb-6">
+                  <div class="relative">
+                    <input 
+                      id="search-service-input" 
+                      type="text" 
+                      class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Search by Service ID, Name, Code, or Price..."
+                    >
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                  </div>
+                </div>
+              <% } %>
+
+              <!-- Bulk Delete for Servers -->
+              <% if(listItem.name.includes("Servers")){ %>
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                      <span class="text-red-700 font-medium">Delete All Servers And Their Services?</span>
+                    </div>
+                    <button onclick="bulkDelete()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
+                      <i class="fas fa-trash mr-2"></i>
+                      Bulk Delete
+                    </button>
+                  </div>
+                </div>
+              <% } %>
+
+              <!-- Data Table -->
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <% Object.keys(JSON.parse(JSON.stringify(listItem.data[0]))).forEach(function(title){ %>
+                        <% if(title != "id"){ %>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <%= title.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                          </th>
+                        <% } %>
+                      <% }) %>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <% listItem.data.forEach(function(myObject, index){ %>
+                      <tr id="<%= listItem.type %>-<%= myObject.id %>" class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <%= index + 1 %>
+                        </td>
+                        <% Object.entries(JSON.parse(JSON.stringify(myObject))).forEach(function(arr){ %>
+                          <% if(arr[0] != "id"){ %>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              <% if(arr[0] == "flag") { %>
+                                <span class="inline-flex items-center">
+                                  <span class="mr-2"><%= flags[arr[1]] ? flags[arr[1]] : "🚩" %></span>
+                                  <span><%= arr[1] %></span>
+                                </span>
+                              <% } else if(arr[0] == "price") { %>
+                                <span class="font-semibold text-green-600"><%= arr[1] %></span>
+                              <% } else { %>
+                                <%= arr[1] %>
+                              <% } %>
+                            </td>
+                          <% } %>
+                        <% }) %>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div class="flex items-center space-x-2">
+                            <% if(myObject.server_name){ %>
+                              <button 
+                                onclick="editPrice('<%= myObject.id %>', '<%= myObject.server_name %>')" 
+                                class="inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md text-xs font-medium transition-colors"
+                              >
+                                <i class="fas fa-edit mr-1"></i>
+                                Edit Price
+                              </button>
+                            <% } %>
+                            <a 
+                              href="<%= url %>&page=<%= listItem.type %>&q=edit&pid=<%= myObject.id %>" 
+                              class="inline-flex items-center px-3 py-1 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 rounded-md text-xs font-medium transition-colors"
+                            >
+                              <i class="fas fa-edit mr-1"></i>
+                              Edit
+                            </a>
+                            <button 
+                              onclick="deleteData('<%= listItem.type %>', '<%= listItem.from %>', <%= JSON.stringify(myObject) %>)"
+                              class="inline-flex items-center px-3 py-1 border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 rounded-md text-xs font-medium transition-colors"
+                            >
+                              <i class="fas fa-trash mr-1"></i>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <% if(listItem.paginateButtons && listItem.paginateButtons.length > 1) { %>
+                <div class="mt-6 flex items-center justify-center">
+                  <nav class="flex items-center space-x-2">
+                    <% listItem.paginateButtons.forEach((val)=>{ %>
+                      <% if(val != "0"){ %>
+                        <% var isActive = "" %>
+                        <% if(val * listItem.limit == listItem.offset + listItem.limit) { %>
+                          <% isActive = "bg-blue-600 text-white" %>
+                        <% } else { %>
+                          <% isActive = "bg-white text-gray-700 hover:bg-gray-50" %>
+                        <% } %>
+                        <a 
+                          href="<%= listItem.paginateLink %>page=<%= val %>" 
+                          class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium <%= isActive %> transition-colors"
+                        >
+                          <%= val %>
+                        </a>
+                      <% } %>
+                    <% }) %>
+                  </nav>
+                </div>
+              <% } %>
+
+            <% } else { %>
+              <!-- Empty State -->
+              <div class="text-center py-12">
+                <div class="mx-auto h-12 w-12 text-gray-400">
+                  <i class="fas fa-inbox text-4xl"></i>
+                </div>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No <%= listItem.from %> found</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                  You don't have any <%= listItem.from %> yet.
+                </p>
+                <div class="mt-6">
+                  <% if(listItem.name.includes("Servers")) { %>
+                    <a href="/add-server" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                      <i class="fas fa-plus mr-2"></i>
+                      Add Server
+                    </a>
+                  <% } else if(listItem.name.includes("APIs")) { %>
+                    <a href="/connect-api" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                      <i class="fas fa-plus mr-2"></i>
+                      Connect API
+                    </a>
+                  <% } else { %>
+                    <a href="/add-service" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                      <i class="fas fa-plus mr-2"></i>
+                      Add Service
+                    </a>
+                  <% } %>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="text-center text-gray-600">
+        <p>&copy; 2024 OTP Bot. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // Search functionality
+    document.getElementById('search-service-input')?.addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const table = document.querySelector('table');
+      const rows = table.querySelectorAll('tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+
+    // Delete functionality
+    function deleteData(type, from, data) {
+      if (confirm(`Are you sure you want to delete this ${type}?`)) {
+        // Simulate delete
+        const row = document.getElementById(`${type}-${data.id}`);
+        if (row) {
+          row.style.opacity = '0.5';
+          setTimeout(() => {
+            row.remove();
+            showMessage(`${type} deleted successfully!`, 'success');
+          }, 500);
+        }
+      }
+    }
+
+    // Bulk delete functionality
+    function bulkDelete() {
+      if (confirm('Are you sure you want to delete ALL servers and their services? This action cannot be undone.')) {
+        // Simulate bulk delete
+        const serverRows = document.querySelectorAll('[id^="servers-"]');
+        serverRows.forEach(row => {
+          row.style.opacity = '0.5';
+        });
+        setTimeout(() => {
+          serverRows.forEach(row => row.remove());
+          showMessage('All servers deleted successfully!', 'success');
+        }, 500);
+      }
+    }
+
+    // Edit price functionality
+    function editPrice(id, serverName) {
+      const newPrice = prompt(`Enter new price for ${serverName}:`);
+      if (newPrice && !isNaN(newPrice)) {
+        // Simulate price update
+        const priceCell = document.querySelector(`#services-${id} td:nth-child(5)`);
+        if (priceCell) {
+          priceCell.innerHTML = `<span class="font-semibold text-green-600">₹${newPrice}</span>`;
+          showMessage('Price updated successfully!', 'success');
+        }
+      }
+    }
+
+    // Show message
+    function showMessage(message, type) {
+      const alertClass = type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+      
+      const alert = document.createElement('div');
+      alert.className = `fixed top-4 right-4 z-50 border rounded-lg p-4 ${alertClass}`;
+      alert.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        alert.remove();
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

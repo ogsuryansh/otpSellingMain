@@ -1,0 +1,414 @@
+<!doctype html>
+<html>
+  <head>
+    <%- include("./partials/head") %>
+      <title>Connect API</title>
+    </head>
+	<body>
+    <%- include("./partials/alert") %>
+		<!-- Contact 1 - Bootstrap Brain Component
+    Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+-->
+		<section class="bg-light py-3 py-md-5">
+			<div class="container">
+				<div class="row justify-content-md-center">
+					<div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+						<h2 class="mb-2 display-5 text-center">Connect an OTP API</h2>
+						<p class="text-secondary mb-3 text-center">
+							Choose a server and add an SMS/OTP API to all the services
+							available in that server.
+						</p>
+						<hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+					</div>
+				</div>
+			</div>
+
+			<div class="container">
+				<div class="row justify-content-lg-center">
+					<div class="col-12 col-lg-9">
+						<div class="bg-white border rounded shadow-sm overflow-hidden">
+							<form id="add-form">
+								<div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+									<div class="input-group">
+										<label class="input-group-text" for="server"
+											>Select Server</label
+										>
+										<select
+											class="form-select"
+											id="server"
+											name="server"
+										>
+										  
+                    <% servers.forEach(function (obj, i){ %>
+                        <option value="<%= obj.id %>" <%= myApi?.server_id == obj.id ? "selected" : "" %> ><%= obj.server_name %></option>
+                          <% }) %>
+                          </select>
+									</div>
+
+									<div class="col-12">
+										<label for="name" class="form-label"
+											>API Name <span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control"
+											id="name"
+											name="name"
+											placeholder="My Api"
+											value="<%= myApi?.name %>"
+											required
+										/>
+									</div>
+
+									<div class="form-check col-12 mx-2 mb-0">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="hasAuth"
+											name="hasAuth"
+											<%= myApi?.hasAuth ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="hasAuth"
+											><small
+												>Does your API uses Authorization Headers?</small
+											></label
+										>
+									</div>
+
+									<div class="col-12 hasAuth" style="display:none;">
+										<label for="token" class="form-label"
+											>API Authorization token
+											<span class="text-danger">*</span></label
+										>
+										<textarea
+											class="form-control"
+											id="token"
+											name="token"
+											placeholder="abcd1234..."
+											rows="2"
+										><%= myApi?.auth %></textarea>
+									</div>
+
+									<div class="input-group">
+										<label class="input-group-text" for="responseType"
+											>API response type</label
+										>
+										<select
+											class="form-select"
+											id="responseType"
+											name="responseType"
+											required
+										>
+											<option value="text" <%= myApi?.responseType == "text" ? "selected" : "" %> >Text</option>
+											<option value="json" <%= myApi?.responseType == "json" ? "selected" : "" %>>JSON</option>
+										</select>
+									</div>
+
+									<div class="col-12">
+										<label for="getNum" class="form-label"
+											>API Get Number URL
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control"
+											id="getNum"
+											name="getNum"
+											placeholder="https://api.myservice.com/handler?apikey=123xx...&method=get-number"
+											value="<%= myApi?.getNumberUrl %>"
+											required
+										/>
+									</div>
+
+									<div class="px-4 json-response" style="display:none;">
+										<div class="card">
+											<div class="card-body">
+												<h6 class="card-title">
+													Where to find phone id and phone number from your get
+													number  url JSON response
+													<button
+														type="button"
+														style="all: unset"
+														data-bs-toggle="tooltip"
+														data-bs-placement="top"
+														data-bs-title="Where to find the phone id/number from your API response as json object. You may use the dot notation to help the server understand on where is the id/number"
+													>
+														&#9432;
+													</button>
+												</h6>
+
+												<div class="col-12 mb-4 mt-2">
+													<label for="idIndex" class="form-label"
+														>Number Id Path
+														<span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="idIndex"
+														name="idIndex"
+														placeholder="id"
+														value="<%= myApi?.id_index %>"
+													/>
+												</div>
+
+												<div class="col-12">
+													<label for="numIndex" class="form-label"
+														>Phone Number Path
+														<span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="numIndex"
+														name="numIndex"
+														placeholder="number"
+														value="<%= myApi?.number_index %>"
+													/>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="col-12">
+										<label for="getMsg" class="form-label"
+											>API Get Message/Status URL
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control"
+											id="getMsg"
+											name="getMsg"
+											placeholder="https://api.myservice.com/handler?apikey=123xx...&method=getMsg"
+											value="<%= myApi?.getStatusUrl %>"
+											required
+										/>
+									</div>
+
+									<div class="px-4">
+										<div class="card">
+											<div class="card-body">
+												<h6 class="card-title">
+													How to know that get status url has sent is a success
+													message indicating user has received his otp. Also what is the path to message text if
+													response type is json.
+													<button
+														type="button"
+														style="all: unset"
+														data-bs-toggle="tooltip"
+														data-bs-placement="top"
+														data-bs-title='If your api response type is text, then the response probably starts with "STATUS_SUCCESS". If your api response type is json then enter the key path and value of the success status, and enter the message/otp text path'
+													>
+														&#9432;
+													</button>
+												</h6>
+
+												<div class="col-12 mb-4 mt-2 text-response">
+													<label for="successIndex" class="form-label"
+														>If Response StartsWith:
+														<span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="successIndex"
+														name="successIndex"
+														placeholder="STATUS_SUCCESS"
+														value="<%= myApi?.success_string %>"
+														<%= myApi?.responseType || myApi?.responseType == "text" ? "responseType" : "" %>
+													/>
+												</div>
+
+												<div class="col-12 mb-4 json-response" style="display:none;">
+													<label for="skeyIndex" class="form-label"
+														><small
+															>Key path from JSON response to check success
+															value</small
+														>
+														<span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="skeyIndex"
+														name="skeyIndex"
+														placeholder="status"
+														value="<%= myApi?.success_key %>"
+													/>
+												</div>
+
+												<div class="col-12 mb-4 json-response" style="display:none;">
+													<label for="svalIndex" class="form-label"
+														><small
+															>Value of success key path to know it has
+															successfully received message/otp</small
+														><span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="svalIndex"
+														name="svalIndex"
+														placeholder="RECEIVED"
+														value="<%= myApi?.success_value %>"
+													/>
+												</div>
+
+												<div class="col-12 json-response" style="display:none;">
+													<label for="msgIndex" class="form-label"
+														><small
+															>Received Message/OTP Path from JSON response </small
+														><span class="text-danger">*</span></label
+													>
+													<input
+														type="text"
+														class="form-control"
+														id="msgIndex"
+														name="msgIndex"
+														placeholder="data.text"
+														value="<%= myApi?.message_index %>"
+													/>
+												</div>
+												
+											</div>
+										</div>
+									</div>
+
+									<div class="col-12">
+										<label for="nextMsg" class="form-label"
+											>API Activate Next Message URL</label
+										>
+										<input
+											type="url"
+											class="form-control"
+											id="nextMsg"
+											name="nextMsg"
+											placeholder="https://api.myservice.com/handler?apikey=123xx...&method=next"
+											value="<%= myApi?.nextOtpUrl %>"
+										/>
+									</div>
+									
+									<div class="col-12">
+										<label for="cancelNum" class="form-label"
+											>API Cancel Number URL
+											<span class="text-danger">*</span></label
+										>
+										<input
+											type="url"
+											class="form-control"
+											id="cancelNum"
+											name="cancelNum"
+											placeholder="https://api.myservice.com/handler?apikey=123xx...&method=cancel-number"
+											value="<%= myApi?.cancelNumberUrl %>"
+											required
+										/>
+									</div>
+									
+									<div class="col-12">
+										<label for="autoCancel" class="form-label"
+											>API AutoCancel Number in Minutes <span class="text-danger">*</span></label
+										>
+										<input
+											type="number"
+											class="form-control"
+											id="autoCancel"
+											name="autoCancel"
+											placeholder="5"
+											value="<%= myApi?.autoCancel %>"
+											required
+										/>
+									</div>
+									
+									<div class="col-12 card p-0">
+									  <div class="card-title"><h6 class="mt-2 px-3">Your Selected Server will include following services: </h6></div>
+									  <div id="services-list" class="card-body list-group p-0">
+									  </div>
+									</div>
+
+									<div class="col-12">
+										<div class="d-grid">
+											<button class="btn btn-primary btn-md" id="submit-btn" type="submit">
+												Submit
+											</button>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+  <%- include("./partials/script") %>
+  <script>
+    toggleAuth({
+      target: document.getElementById("hasAuth")
+    })
+    toggleResponseType({
+      target: document.getElementById("responseType")
+    })
+    document.querySelectorAll(".json-response").forEach((el)=>console.log(el.attributes))
+    document.querySelectorAll(".text-response").forEach((el)=>console.log(el.attributes))
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    document.getElementById("hasAuth").addEventListener("change", toggleAuth);
+    document.getElementById("responseType").addEventListener("change", toggleResponseType);
+    function toggleAuth(e) {
+    	var div = document.querySelector(".hasAuth");
+    	var isChecked = e.target.checked;
+    	var input = document.querySelector("#token");
+    	if (isChecked) {
+    		div.style.display = "";
+    		input.setAttribute("required", "true");
+    	} else {
+    		input.removeAttribute("required");
+    		div.style.display = "none";
+    	}
+    }
+    function toggleResponseType(e) {
+      var select = e.target.value == "text" ? "json" : "text"
+    	var shows = document.querySelectorAll(`.${e.target.value}-response`);
+    	var hides = document.querySelectorAll(`.${select}-response`);
+      shows.forEach((el)=>{
+        el.setAttribute("required", "true");
+        el.style.display = "";
+      })
+      hides.forEach((el)=>{
+        el.removeAttribute("required");
+        el.style.display = "none";
+      })
+    }
+  </script>
+  <script>
+    var data = {}
+    window.onload = function(){
+      fetch(path.location + "/v1?q=services&id=" + path.query.id)
+      .then(res=>res.json())
+      .then(services=>{ 
+        data.services = services;
+        setMyServicesList();
+      })
+      .catch(err=>console.error("error getting services: ", err))
+    }
+    var selectEl = document.querySelector("#server")
+    selectEl.addEventListener("change", setMyServicesList)
+    function setMyServicesList(){
+      var itemsEl = document.getElementById("services-list")
+      if(!selectEl.value){
+        itemsEl.innerHTML = '<li class="list-group-item d-flex align-items-center text-danger"><b>Add a server before connecting any API.</b></li>'
+        return;
+      } 
+      var listItems = ""
+      data?.services?.forEach((obj)=>{
+        if(obj.server_id == selectEl.value){
+           listItems += `<li class="list-group-item d-flex align-items-center gap-2"><img src="${obj.logo}" alt="service-logo" height="32" width="32" ><b>${obj.name}</b></li>`
+        }
+      })
+      if(!listItems) listItems = '<li class="list-group-item d-flex align-items-center text-secondary"><b>Looks like your selected server doesn\'t have any services. You can still connect this API to the selected server, any services added later to this server will automatically get connected to this API.</b></li>'
+      itemsEl.innerHTML = listItems
+    }
+  </script>
+	</body>
+</html>

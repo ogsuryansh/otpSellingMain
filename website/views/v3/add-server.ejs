@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Add Server - OTP Bot</title>
+  <style>
+    .form-card {
+      background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .input-focus {
+      transition: all 0.3s ease;
+    }
+    .input-focus:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 min-h-screen">
+  <!-- Include Navbar -->
+  <%- include('partials/navbar', { page: 'add-server' }) %>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8 text-center">
+      <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6">
+        <i class="fas fa-server text-3xl text-blue-600"></i>
+      </div>
+      <h1 class="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-3">Add New Server</h1>
+      <p class="text-gray-600 text-lg">Add a server to your bot. You can later add a service and connect it with your added server.</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card rounded-2xl shadow-xl p-8">
+      <form id="addServerForm" class="space-y-6">
+        <!-- Server Name -->
+        <div>
+          <label for="name" class="block text-sm font-semibold text-gray-700 mb-3">
+            Server Name <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            required
+            class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 input-focus bg-white"
+            placeholder="Enter server name..."
+            value="<%= myServer?.server_name %>"
+          >
+        </div>
+
+        <!-- Server Country Code -->
+        <div>
+          <label for="code" class="block text-sm font-semibold text-gray-700 mb-3">
+            Server Country Code <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="code" 
+            name="code" 
+            required
+            class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 input-focus bg-white"
+            placeholder="Enter country code (e.g., 91)"
+            value="<%= myServer?.country %>"
+          >
+        </div>
+
+        <!-- Server Country -->
+        <div>
+          <label for="flag" class="block text-sm font-semibold text-gray-700 mb-3">
+            Server Country <span class="text-red-500">*</span>
+          </label>
+          <select 
+            id="flag" 
+            name="flag" 
+            required
+            class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 input-focus bg-white"
+          >
+            <% var countries = Object.keys(flags) %>
+            <% countries.forEach(function (val){ %>
+              <% var isSelected = ""; %>
+              <% if(myServer?.flag) isSelected = myServer.flag == val ? "selected" : ""; 
+              else isSelected = val.toLowerCase() == "india" ? "selected" : "" %>
+              <option value="<%= val %>" <%=isSelected %>><%= flags[val] %> - <%= val %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex items-center justify-end space-x-4 pt-8 border-t border-gray-200">
+          <button 
+            type="button" 
+            onclick="window.history.back()"
+            class="px-8 py-4 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold"
+          >
+            <i class="fas fa-arrow-left mr-2"></i>
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            id="submit-btn"
+            class="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all duration-300 flex items-center shadow-lg hover:shadow-xl"
+          >
+            <i class="fas fa-plus mr-2"></i>
+            Add Server
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="mt-6"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="text-center text-gray-600">
+        <p>&copy; 2024 OTP Bot. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Form JavaScript -->
+  <script>
+    document.getElementById('addServerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-btn');
+      const originalText = submitBtn.innerHTML;
+      
+      // Get form data
+      const formData = new FormData(this);
+      const serverData = {
+        name: formData.get('name'),
+        code: formData.get('code'),
+        flag: formData.get('flag')
+      };
+      
+      // Validate required fields
+      if (!serverData.name || !serverData.code || !serverData.flag) {
+        showMessage('All fields are required!', 'error');
+        return;
+      }
+      
+      // Show loading state
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+      submitBtn.disabled = true;
+      
+      try {
+        // Make actual API call
+        const response = await fetch('/add-server', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(serverData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Show success message
+          showMessage(result.message || 'Server added successfully!', 'success');
+          
+          // Reset form
+          this.reset();
+          
+          // Redirect to my-services page after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/my-services';
+          }, 2000);
+        } else {
+          // Show error message
+          showMessage(result.message || 'Error adding server!', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding server:', error);
+        showMessage('Network error! Please try again.', 'error');
+      } finally {
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    function showMessage(message, type) {
+      const container = document.getElementById('messageContainer');
+      const alertClass = type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+      
+      container.innerHTML = `
+        <div class="border rounded-lg p-4 ${alertClass}">
+          <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+          </div>
+        </div>
+      `;
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

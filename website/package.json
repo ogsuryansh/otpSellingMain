@@ -1,0 +1,36 @@
+{
+	"name": "rental-otp-bot",
+	"version": "1.0.0",
+	"description": "Telegram OTP Bot for local development",
+	"main": "server.js",
+	"scripts": {
+		"start": "pm2 start server.js --name my-tg-bot --output logs.txt --error errors.txt --log-date-format \"YYYY-MM-DD HH:mm:ss Z\" --time",
+		"stop": "pm2 stop my-tg-bot",
+		"restart": "pm2 restart my-tg-bot",
+		"dev": "node dev-server.js",
+		"dev:debug": "node --inspect dev-server.js",
+		"dev:nodemon": "nodemon dev-server.js",
+		"simple": "node simple-server.js",
+		"simple:debug": "node --inspect simple-server.js",
+		"simple:dev": "node simple-dev-server.js"
+	},
+	"keywords": [
+		"telegram",
+		"bot",
+		"otp",
+		"nodejs"
+	],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"body-parser": "^1.20.2",
+		"dotenv": "^16.3.1",
+		"ejs": "^3.1.9",
+		"express": "^4.18.2",
+		"mongodb": "^6.18.0",
+		"pm2": "^5.3.1"
+	},
+	"devDependencies": {
+		"nodemon": "^3.0.1"
+	}
+}

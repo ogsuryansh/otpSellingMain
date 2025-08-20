@@ -1,0 +1,60 @@
+<script>
+  var query = window.location.search
+  .substring(1)
+  .split("&")
+  .map((v) => v.split("="));
+  var path = {
+  location: window.location.origin,
+  query: Object.fromEntries(query)
+  };
+  var submitting = false;
+  var form = document
+  .querySelector("#add-form")
+  var submitBtn = document.querySelector("#submit-btn")
+
+  form.addEventListener("submit", function (e) {
+  e.preventDefault();
+  if (submitting) return;
+  submitting = true;
+  submitBtn.innerText = "Submitting...";
+  var formData = new FormData(form)
+  var data = {}
+  formData.forEach((value, key)=>{
+  data[key] = value;
+  })
+  var url = path.location + "/v1?id=" + path.query.id + "&page=" + path.query.page;
+  if (path.query.pid) url += "&pid=" + path.query.pid;
+  fetch(url, {
+  method: "post",
+  headers: {
+  "Content-Type": "application/json"
+  },
+  body: JSON.stringify(data)
+  }).then(res=>res.json()).then(data=>{
+  submitting = false;
+  submitBtn.innerText = "Submit"
+  showAlert(data.message, data.status)
+  }).catch(err=>{
+  submitting = false;
+  submitBtn.innerText = "Submit"
+  console.error("error posting form data: ", err)
+  showAlert("An Error occurred while posting your form data.\nPlease Try Again", 2)
+  })
+  });
+  function showAlert(message, status){
+  var alert = document.getElementById("alert")
+  var type = status == 1 ? "alert-success": "alert-danger"
+  var removeClass = status == 1 ? "alert-danger": "alert-success"
+
+  if (alert.classList.contains(removeClass)){
+  alert.classList.remove(removeClass)
+  }
+
+  alert.style.display = ""
+  alert.classList.add(type)
+  document.getElementById("alert-text").innerText = message;
+  }
+  document.getElementById("alert-close").addEventListener("click", function(){
+  document.getElementById("alert").style.display = "none"
+  })
+</script>

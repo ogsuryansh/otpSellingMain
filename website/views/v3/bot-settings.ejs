@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Bot Settings - OTP Bot</title>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Include Navbar -->
+  <%- include('partials/navbar', { page: 'bot-settings' }) %>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Bot Settings</h1>
+      <p class="text-gray-600">Configure your bot settings and payment methods</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <form id="botSettingsForm" class="space-y-6">
+        <!-- Basic Settings Section -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Settings</h3>
+          
+          <!-- Telegram Channel -->
+          <div class="mb-4">
+            <label for="channel" class="block text-sm font-medium text-gray-700 mb-2">
+              Telegram Channel <span class="text-red-500">*</span>
+            </label>
+            <div class="flex">
+              <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                @
+              </span>
+              <input 
+                type="text" 
+                id="channel" 
+                name="channel" 
+                required
+                class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="MyChannel"
+                value="<%= setting.channel %>"
+              >
+            </div>
+          </div>
+
+          <!-- Support URL -->
+          <div class="mb-4">
+            <label for="supportUrl" class="block text-sm font-medium text-gray-700 mb-2">
+              Support URL <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="url" 
+              id="supportUrl" 
+              name="supportUrl" 
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="https://t.me/support"
+              value="<%= setting.supportUrl %>"
+            >
+          </div>
+        </div>
+
+
+
+        <!-- Payment Methods Section -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+          
+          <!-- Manual Payment -->
+          <div class="mb-4">
+            <label class="flex items-center mb-3">
+              <input 
+                type="checkbox" 
+                id="manual" 
+                name="manual" 
+                <%= setting.manual ? 'checked' : '' %>
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              >
+              <span class="ml-2 text-sm font-medium text-gray-700">Enable Manual Payment</span>
+            </label>
+            <div id="manualFields" class="<%= setting.manual ? '' : 'hidden' %> space-y-3 ml-6">
+              <input 
+                type="text" 
+                name="manualUpi" 
+                placeholder="UPI ID"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value="<%= setting.manualUpi %>"
+              >
+              <input 
+                type="text" 
+                name="manualQr" 
+                placeholder="QR Code URL"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value="<%= setting.manualQr %>"
+              >
+            </div>
+          </div>
+
+          <!-- Paytm -->
+          <div class="mb-4">
+            <label class="flex items-center mb-3">
+              <input 
+                type="checkbox" 
+                id="paytm" 
+                name="paytm" 
+                <%= setting.paytm ? 'checked' : '' %>
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              >
+              <span class="ml-2 text-sm font-medium text-gray-700">Enable Paytm</span>
+            </label>
+            <div id="paytmFields" class="<%= setting.paytm ? '' : 'hidden' %> space-y-3 ml-6">
+              <input 
+                type="text" 
+                name="paytmMid" 
+                placeholder="Merchant ID"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value="<%= setting.paytmMid %>"
+              >
+              <input 
+                type="text" 
+                name="paytmUpi" 
+                placeholder="UPI ID"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value="<%= setting.paytmUpi %>"
+              >
+            </div>
+          </div>
+
+          <!-- Crypto -->
+          <div class="mb-4">
+            <label class="flex items-center mb-3">
+              <input 
+                type="checkbox" 
+                id="crypto" 
+                name="crypto" 
+                <%= setting.crypto ? 'checked' : '' %>
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              >
+              <span class="ml-2 text-sm font-medium text-gray-700">Enable Crypto Payment</span>
+            </label>
+            <div id="cryptoFields" class="<%= setting.crypto ? '' : 'hidden' %> ml-6">
+              <input 
+                type="text" 
+                name="cryptoHash" 
+                placeholder="Wallet Address"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value="<%= setting.cryptoHash %>"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex items-center justify-end space-x-4 pt-6">
+          <button 
+            type="button" 
+            onclick="window.history.back()"
+            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            id="submit-btn"
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center"
+          >
+            <i class="fas fa-save mr-2"></i>
+            Save Settings
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="mt-6"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="text-center text-gray-600">
+        <p>&copy; 2024 OTP Bot. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Form JavaScript -->
+  <script>
+    // Toggle payment method fields
+    document.getElementById('manual').addEventListener('change', function() {
+      document.getElementById('manualFields').classList.toggle('hidden', !this.checked);
+    });
+    
+    document.getElementById('paytm').addEventListener('change', function() {
+      document.getElementById('paytmFields').classList.toggle('hidden', !this.checked);
+    });
+    
+    document.getElementById('crypto').addEventListener('change', function() {
+      document.getElementById('cryptoFields').classList.toggle('hidden', !this.checked);
+    });
+
+    // Form submission
+    document.getElementById('botSettingsForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-btn');
+      const originalText = submitBtn.innerHTML;
+      
+      // Show loading state
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+      submitBtn.disabled = true;
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Show success message
+        showMessage('Settings saved successfully!', 'success');
+        
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }, 1500);
+    });
+    
+    function showMessage(message, type) {
+      const container = document.getElementById('messageContainer');
+      const alertClass = type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+      
+      container.innerHTML = `
+        <div class="border rounded-lg p-4 ${alertClass}">
+          <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+          </div>
+        </div>
+      `;
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

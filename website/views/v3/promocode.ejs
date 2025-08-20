@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Promocodes</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+			integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N"
+			crossorigin="anonymous"
+		/>
+		<script
+			src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+			integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+			crossorigin="anonymous"
+		></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.js"></script>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.css"
+			rel="stylesheet"
+		/>
+	</head>
+	<body class="pt-4 px-2">
+		<div
+			class="mb-4 mt-2 mx-2 w-full d-flex justify-content-center align-items-end"
+		>
+			<button
+				id="add-promocode-btn"
+				type="button"
+				class="btn btn-primary"
+				style="margin-left: auto"
+			>
+				Add Promocode
+			</button>
+		</div>
+		<h2 class="mx-2">My Promocodes:</h2>
+		<div id="no-promo-info" class="card card-body mx-2 mt-2" style="display:<%= promocodes.length ? 'none' : '' %>">Looks like you don't have any promocodes...</div>
+		<ol id="list-items" class="list-group list-group-numbered mx-2 mt-2 mb-5" style="display:<%= promocodes.length ? '' : 'none' %>">
+			<% promocodes.forEach(function(obj){ %>
+			<li
+			  id="promo-<%= obj.id %>"
+				class="list-group-item d-flex justify-content-between align-items-start"
+			>
+				<div class="ms-2 me-auto d-flex justify-content-between gap-4 w-100">
+ 					<span>
+							<b><%= obj.promocode %></b>
+							<br/>
+							<p class="mt-3"><%= obj.amount %> 💎 Credit Promocode</p>
+						</span>
+						<span>
+						<span
+							class="badge bg-secondary text-white rounded-pill d-flex justify-content-between align-items-center"
+							style="height: 20px; margin-left: auto"
+							><%= obj.count || 0 %> left</span
+						>
+						<button class="mt-3 btn btn-danger fw-bold rounded" onclick="deletePromo(<%= obj.id %>, '<%= obj.promocode %>')">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								fill="currentColor"
+								class="bi bi-trash"
+								viewBox="0 0 16 16"
+							>
+								<path
+									d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"
+								/>
+								<path
+									d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"
+								/>
+							</svg>
+						</button>
+						</span>
+				</div>
+			</li>
+			<% }) %>
+		</ol>
+
+		<script>
+			document
+				.querySelector("#add-promocode-btn")
+				.addEventListener("click", function () {
+					swal(
+						{
+							title: "Add Promocode",
+							text: "Enter the promocode below:",
+							type: "input",
+							showCancelButton: true,
+							closeOnConfirm: false,
+							inputPlaceholder: "PROMO50"
+						},
+						function (promoCode) {
+							if (!promoCode || promoCode == "") {
+								swal.showInputError("You need to write something!");
+								return false;
+							}
+							swal(
+								{
+									title: "Credit Amount",
+									text: "Enter the amount to credit to user:",
+									type: "input",
+									showCancelButton: true,
+									closeOnConfirm: false,
+									inputPlaceholder: "50"
+								},
+								function (amount) {
+									if (!amount || !Number(amount) || amount == "") {
+										swal.showInputError("Enter a valid amount in number!");
+										return false;
+									}
+									swal(
+										{
+											title: "Promocode Users",
+											text: "Enter the number of how many users can use this promocode:",
+											type: "input",
+											showCancelButton: true,
+											closeOnConfirm: false,
+											inputPlaceholder: "10"
+										},
+										function (memebers) {
+											if (!memebers || !Number(memebers) || memebers == "") {
+												swal.showInputError("Enter a valid number!");
+												return false;
+											}
+											const data = {
+												promocode: promoCode.toUpperCase(),
+												amount,
+												limit: memebers
+											};
+											swal(
+												{
+													title: "Confirm",
+													text: `Promocode: ${data.promocode}\nAmount: ${data.amount}\nUse Limit: ${data.limit}`,
+													type: "info",
+													showCancelButton: true,
+													closeOnConfirm: false,
+													showLoaderOnConfirm: true
+												},
+												function () {
+													var query = window.location.search
+														.substring(1)
+														.split("&")
+														.map((v) => v.split("="));
+													var path = {
+														location: window.location.origin,
+														query: Object.fromEntries(query)
+													};
+													var url =
+														path.location +
+														"/v3?id=" +
+														path.query.id +
+														"&page=" +
+														path.query.page;
+													fetch(url, {
+														method: "post",
+														headers: {
+															"Content-Type": "application/json"
+														},
+														body: JSON.stringify(data)
+													})
+														.then((r) => r.json())
+														.then((res) => {
+															if (res.status != 1) {
+																swal(
+																	"Error",
+																	`Unable to add promocode, Reason: ${res.message}`,
+																	"error"
+																);
+																return;
+															}
+															swal(
+																"Successfully Added!",
+																`Successfully Added "${data.promocode}" Promocde`,
+																"success"
+															);
+															const myList =
+																document.querySelector("#list-items");
+															const prevHtml = myList.innerHTML;
+															const newHtml = `<li
+															id="promo-${res.id}"
+				class="list-group-item d-flex justify-content-between align-items-start"
+			>
+				<div class="ms-2 me-auto d-flex justify-content-between gap-4 w-100">
+ 					<span>
+							<b>${data.promocode}</b>
+							<br/>
+							<p class="mt-3">${data.amount} 💎 Credit Promocode</p>
+						</span>
+						<span>
+						<span
+							class="badge bg-secondary text-white rounded-pill d-flex justify-content-between align-items-center"
+							style="height: 20px; margin-left: auto"
+							>${data.limit} left</span
+						>
+						<button class="mt-3 btn btn-danger fw-bold rounded" onclick="deletePromo(${res.id}, '${data.promocode}')">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								fill="currentColor"
+								class="bi bi-trash"
+								viewBox="0 0 16 16"
+							>
+								<path
+									d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"
+								/>
+								<path
+									d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"
+								/>
+							</svg>
+						</button>
+						</span>
+				</div>
+			</li>`;
+															myList.innerHTML = newHtml + prevHtml;
+															myList.style.display = ""
+															var noInfoTxt = document.querySelector("#no-promo-info")
+															if(noInfoTxt) noInfoTxt.style.display = "none"
+														})
+														.catch((err) => {
+															swal(
+																"Error",
+																`Unable to add promocode to bot. Please try again later`,
+																"error"
+															);
+														});
+												}
+											);
+										}
+									);
+								}
+							);
+						}
+					);
+				});
+			
+			function deletePromo(id, promocode) {
+				swal(
+					{
+						title: "Confirm Delete",
+						text: `Delete "${promocode}" Promocode ?`,
+						type: "info",
+						showCancelButton: true,
+						closeOnConfirm: false,
+						showLoaderOnConfirm: true
+					},
+					function () {
+						var query = window.location.search
+							.substring(1)
+							.split("&")
+							.map((v) => v.split("="));
+						var path = {
+							location: window.location.origin,
+							query: Object.fromEntries(query)
+						};
+						var url =
+							path.location +
+							"/v3?id=" +
+							path.query.id +
+							"&page=" +
+							path.query.page +
+							"&qid=" +
+							id;
+						fetch(url, {
+							method: "delete",
+							headers: {
+								"Content-Type": "application/json"
+							}
+						})
+							.then((r) => r.json())
+							.then((res) => {
+								if (res.status != 1) {
+									swal(
+										"Error",
+										`Unable to delete promocode, Reason: ${res.message}`,
+										"error"
+									);
+									return;
+								}
+								swal("Success", `Successfully deleted promocode`, "success");
+								document.querySelector(`#promo-${id}`).remove();
+							})
+							.catch((err) => {
+								swal(
+									"Error",
+									`Unable to delete promocode. Please try again later`,
+									"error"
+								);
+							});
+					}
+				);
+			}
+			
+		</script>
+	</body>
+</html>

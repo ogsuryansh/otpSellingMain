@@ -1,0 +1,371 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Temp Mail Api</title>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+			crossorigin="anonymous"
+		></script>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+			crossorigin="anonymous"
+		/>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.js"></script>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap-sweetalert@1.0.1/dist/sweetalert.min.css"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+	  <div id="alert" class="alert alert-dismissible fade show position-sticky top-0" role="alert" style="display:none;z-index:99999;">
+  <span id="alert-text"></span>
+  <button id="alert-close" type="button" class="btn-close"></button>
+</div>
+		<!-- Contact 1 - Bootstrap Brain Component
+                          Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+                      -->
+		<section class="py-3 py-md-5">
+			<div class="container">
+				<div class="row justify-content-md-center">
+					<div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+						<h2 class="mb-2 display-5 text-center">Temp Mail API</h2>
+						<p class="text-secondary mb-3 text-center">
+							Add API key of your
+							<a href="https://sms-activate.org/en">sms-activate</a> account,
+							enable temp mail on your bot, and Manage your temp mail API
+							services here
+						</p>
+						<hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+					</div>
+				</div>
+			</div>
+
+			<div class="container">
+				<div class="row justify-content-lg-center">
+					<div class="col-12 col-lg-9">
+						<div class="bg-white border rounded shadow-sm overflow-hidden">
+							<form id="api-form">
+								<div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+									<div class="form-check col-12 mx-2">
+										<input
+											class="form-check-input"
+											type="checkbox"
+											role="switch"
+											id="tempMail"
+											name="tempMail"
+											<%= setting.tempMail ? "checked" : "" %>
+										/>
+										<label class="form-check-label" for="tempMail"
+											>Enable Temp Mail for your bot
+										</label>
+									</div>
+									<div class="col-12">
+										<label for="code" class="form-label"
+											>API Key <span class="text-danger">*</span></label
+										>
+										<input
+											type="text"
+											class="form-control"
+											id="tempMailApi"
+											name="tempMailApi"
+											placeholder="abcdefgxxx"
+											value="<%= setting?.tempMailApi %>"
+											required
+										/>
+									</div>
+
+									<div class="col-12">
+										<div class="d-grid">
+											<button
+												class="btn btn-primary btn-md"
+												type="submit"
+												id="submit-btn"
+											>
+												Submit
+											</button>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="container mt-4">
+				<div class="row justify-content-lg-center">
+					<div class="col-12 col-lg-9">
+						<div class="bg-white border rounded shadow-sm overflow-hidden p-3">
+							<div class="d-flex justify-content-between align-items-center">
+								<b>My Temp Mail Services: </b>
+								<button
+									type="button"
+									class="btn btn-primary w-auto mx-auto"
+									data-bs-toggle="modal"
+									data-bs-target="#staticBackdrop"
+								>
+									Add Service
+								</button>
+							</div>
+							<div class="mt-3">
+								<p id="no-data-txt" style="display:<%= services.length ? 'none' : '' %>;">Looks like you don't have any temp mail services...</p>
+								<div class="table-responsive" style="display:<%= !services.length ? 'none' : '' %>;">
+  									<table
+  										class="table table-striped bsb-table-xl text-wrap align-middle m-0"
+  									>
+  										<thead>
+  											<tr>
+  											  <th>#</th>
+  											  <th>Domain</th>
+  											  <th>Mail Type</th>
+  											  <th>Profit Margin</th>
+  												<th>Action</th>
+  											</tr>
+  										</thead>
+  										<tbody>
+  											<% services.forEach(function(myObject, index){ %>
+  											<tr id="mail-service-<%= myObject.id %>">
+  											<td><%= index + 1 %></td>
+  											<td><%= myObject.mail_domain %></td>
+  											<td><%= myObject.mail_type %></td>
+  											<td><%= myObject.profit_margin %> %</td>
+  											<td>
+  											  <button class="badge rounded-pill bg-danger btn mt-2"
+  												onclick="deleteMailService('<%= myObject.id %>', '<%= myObject.mail_domain %>')">&#9249; Delete</button>
+  											</td>
+  											</tr>
+  											<% }) %>
+  											
+  										</tbody>
+  									</table>
+  								</div>
+							<nav class="mt-2 d-flex justify-content-center" aria-label="...">
+                <ul class="pagination">
+                  <% buttons.forEach((val)=>{ %>
+                  <% var isActive = "" %>
+                  <% if(val * limit == offset + limit) { %>
+                  <%   isActive = "active" %>
+                  <% } %>
+                  <li class="page-item" style="display: <%= val == 0 ? 'none' : '' %>"><a class="page-link <%= isActive %>" href="<%= url %>&page=temp_mail&q=page&offset=<%= val %>"><%= val %></a></li>
+                  <% }) %>
+                </ul>
+              </nav>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal -->
+			<div
+				class="modal fade"
+				id="staticBackdrop"
+				data-bs-backdrop="static"
+				data-bs-keyboard="false"
+				tabindex="-1"
+				aria-labelledby="staticBackdropLabel"
+				aria-hidden="true"
+			>
+				<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h1 class="modal-title fs-5" id="staticBackdropLabel">
+								Add Temp Mail Service
+							</h1>
+							<button
+								type="button"
+								class="btn-close"
+								id="modal-close-btn"
+								data-bs-dismiss="modal"
+								aria-label="Close"
+							></button>
+						</div>
+						<div class="modal-body">
+							<form id="add-service">
+								<div class="row mb-3">
+									<label for="mail_domain" class="col-sm-2 col-form-label"
+										>Domain <span class="text-danger">*</span></label
+									>
+									<div class="col-sm-10">
+										<input
+											type="text"
+											class="form-control"
+											id="mail_domain"
+											name="mail_domain"
+											placeholder="google"
+										/>
+									</div>
+								</div>
+
+								<div class="row mb-3">
+									<label for="domain_logo" class="col-sm-2 col-form-label"
+										>Domain Logo URL <span class="text-danger">*</span></label
+									>
+									<div class="col-sm-10">
+										<input
+											type="text"
+											class="form-control"
+											id="domain_logo"
+											name="domain_logo"
+											placeholder="https://google.com/logo.png"
+										/>
+									</div>
+								</div>
+
+								<fieldset class="row mb-3">
+									<legend class="col-form-label col-sm-2 pt-0">
+										Mail Type <span class="text-danger">*</span>
+									</legend>
+									<div class="col-sm-10">
+										<div class="form-check">
+											<input
+												class="form-check-input"
+												type="radio"
+												name="mail_type"
+												id="mail_type_z"
+												value="zones"
+												checked
+											/>
+											<label class="form-check-label" for="mail_type_z">
+												Zone
+											</label>
+										</div>
+										<div class="form-check">
+											<input
+												class="form-check-input"
+												type="radio"
+												name="mail_type"
+												id="mail_type_p"
+												value="popular"
+											/>
+											<label class="form-check-label" for="mail_type_p">
+												Popular
+											</label>
+										</div>
+									</div>
+								</fieldset>
+
+								<div class="row mb-3">
+									<label for="profit_margin" class="col-sm-2 col-form-label"
+										>Profit Margin <span class="text-danger">*</span></label
+									>
+									<div class="col-sm-10">
+										<div class="input-group">
+											<input
+												type="number"
+												class="form-control"
+												id="profit_margin"
+												name="profit_margin"
+												placeholder="Profit percentage"
+												step="0.0.1"
+												value="5"
+											/>
+											<span class="input-group-text" id="basic-addon1">%</span>
+										</div>
+									</div>
+								</div>
+
+								<div class="d-grid">
+									<button type="submit" class="btn btn-primary">Submit</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<script>
+		var query = window.location.search
+  .substring(1)
+  .split("&")
+  .map((v) => v.split("="));
+  var path = {
+  location: window.location.origin,
+  query: Object.fromEntries(query)
+  };
+		  document.querySelector("#api-form").addEventListener("submit", (e)=>{
+		    e.preventDefault();
+		    const tempMail = document.getElementById("tempMail").checked
+		    const apiKey = document.getElementById("tempMailApi").value
+		    fetch(`${path.location}/v3?id=${path.query.id}&page=${path.query.page}&for=setting&enable=${tempMail}&api=${apiKey}`, {
+		      method: "post"
+		    })
+		    .then(r=>r.json())
+		    .then(data=>{
+		      showAlert(data.message, data.status)
+		    })
+		    .catch(err=>{
+		      showAlert("Unable to submit Data. Please try again later", 2)
+		    })
+		  })
+		  document.querySelector("#add-service").addEventListener("submit", (e)=>{
+		    e.preventDefault();
+		    var formData = new FormData(document.querySelector("#add-service"))
+		    var data = {}
+        formData.forEach((value, key)=>{
+          data[key] = value;
+        })
+		    fetch(`${path.location}/v3?id=${path.query.id}&page=${path.query.page}&for=service`, {
+		      method: "post",
+		      headers: {
+		        "Content-Type": "application/json"
+		      },
+		      body: JSON.stringify(data)
+		    })
+		    .then(r=>r.json())
+		    .then(data=>{
+		      showAlert(data.message, data.status)
+		      if(data.status == 1) document.querySelector("#modal-close-btn").click()
+		    })
+		    .catch(err=>{
+		      showAlert("Unable to submit Data. Please try again later", 2)
+		    })
+		  })
+		  function showAlert(message, status){
+  var alert = document.getElementById("alert")
+  var type = status == 1 ? "alert-success": "alert-danger"
+  var removeClass = status == 1 ? "alert-danger": "alert-success"
+
+  if (alert.classList.contains(removeClass)){
+  alert.classList.remove(removeClass)
+  }
+
+  alert.style.display = ""
+  alert.classList.add(type)
+  document.getElementById("alert-text").innerText = message;
+  }
+  document.getElementById("alert-close").addEventListener("click", function(){
+  document.getElementById("alert").style.display = "none"
+  })
+  
+      function deleteMailService(id, domain){
+        swal({
+  title: "Confirm Delete ?",
+  text: `Are you sure, you want to delete this temp mail service which has domain of "${domain}"`,
+  type: "info",
+  showCancelButton: true,
+  closeOnConfirm: false,
+  showLoaderOnConfirm: true
+}, function () {
+  fetch(`${path.location}/v3?id=${path.query.id}&page=${path.query.page}&qid=${id}`, {
+		      method: "delete",
+		    })
+		    .then(r=>r.json())
+		    .then(data=>{
+		      swal(data.status == 1 ? "Success" : "Error", data.message, data.status == 1 ? "success" : "error")
+		      if(data.status == 1) document.querySelector(`#mail-service-${id}`).remove()
+		    })
+		    .catch(err=>{
+		      swal("Error", "Unable to delete this Mail Data. Please try again later", "error")
+		    })
+  
+});
+      }
+		</script>
+	</body>
+</html>

@@ -1,0 +1,87 @@
+<html>
+	<head>
+  <%- include("./partials/head") %>
+    <title>My Services</title> 
+	</head>
+	<body class="bg-light">
+	  <div id="alert" class="alert alert-dismissible fade show position-sticky top-0" role="alert" style="display:none;z-index:99999;">
+      <span id="alert-text"></span>
+      <button id="alert-close" type="button" class="btn-close"></button>
+    </div>
+		<!-- Credits - https://bootstrapbrain.com/component/bootstrap-table-card-example/#preview -->
+		<section class="py-3 py-md-5">
+			<div class="container">
+				<div class="row justify-content-center">
+				  <% data.forEach(function(listItem){ %>
+					<div class="col-12 col-lg-9 col-xl-8 mb-4">
+						<div class="card widget-card border-light shadow-sm">
+							<div id="<%= listItem.name.toLowerCase().split(' ').join('_') %>" class="card-body p-4">
+								<h5 class="card-title widget-card-title mb-4 border-bottom">
+									<%= listItem.name %>
+								</h5>
+								<% if(listItem.data?.length){ %>
+  								<div class="table-responsive">
+  									<table
+  										class="table table-striped bsb-table-xl text-wrap align-middle m-0"
+  									>
+  										<thead>
+  											<tr>
+  											  <th>#</th>
+  												<% Object.keys(JSON.parse(JSON.stringify(listItem.data[0]))).forEach(function(title){ %>
+  												<% if(title != "id"){ %>
+  												<th><%= title %></th>
+  												<% } %>
+  												<% }) %>
+  												<th>Action</th>
+  											</tr>
+  										</thead>
+  										<tbody>
+  											<% listItem.data.forEach(function(myObject, index){ %>
+  											<tr id="<%= listItem.type %>-<%= myObject.id %>">
+  											<td><%= index + 1 %></td>
+  											  <% Object.entries(JSON.parse(JSON.stringify(myObject))).forEach(function(arr){ %>
+  											  <% if(arr[0] != "id"){ %>
+  												<td class="text-secondary fs-7" style="max-width: 250px;
+    word-wrap: break-word;">
+  												  <%= arr[0] == "flag" ? (flags[arr[1]] ? flags[arr[1]] : "🚩") + " - " + arr[1] : arr[1] %>
+  												</td>
+  												<% } %>
+  												<% }) %>
+  												<td>
+  													<a href="<%= url %>&page=<%= listItem.type %>&q=edit&pid=<%= myObject.id %>" class="badge rounded-pill bg-info text-decoration-none"
+  														>&#9998; Edit</a>
+  													<button class="badge rounded-pill bg-danger btn mt-2"
+  												onclick="deleteData('<%= listItem.type %>', '<%= listItem.from %>', <%= JSON.stringify(myObject) %>)">&#9249; Delete</button>
+  												</td>
+  											</tr>
+  											<% }) %>
+  											
+  										</tbody>
+  									</table>
+  								</div>
+								<% } else { %>
+								  <p class="fs-6">You Don't have any <%= listItem.from %>...</p>
+								<% } %>
+							</div>
+							<nav class="d-flex justify-content-center" aria-label="...">
+                <ul class="pagination">
+                  <% listItem.paginateButtons.forEach((val)=>{ %>
+                  <% if(val != "0"){ %>
+                  <% var isActive = "" %>
+                  <% if(val * listItem.limit == listItem.offset + listItem.limit) { %>
+                  <%   isActive = "active" %>
+                  <% } %>
+                  <li class="page-item"><a class="page-link <%= isActive %>" href="<%= listItem.paginateLink %><%= val %>#<%= listItem.name.toLowerCase().split(' ').join('_') %>"><%= val %></a></li>
+                  <% } %>
+                  <% }) %>
+                </ul>
+              </nav>
+						</div>
+					</div>
+					<% }) %>
+				</div>
+			</div>
+		</section>
+		<%- include("./partials/my-data") %>
+	</body>
+</html>

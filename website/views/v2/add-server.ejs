@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <%- include("./partials/head") %>
+    <title>Add Server</title>
+  </head>
+  <body>
+    <%- include("./partials/alert") %>
+      <!-- Contact 1 - Bootstrap Brain Component
+                          Credits: https://bootstrapbrain.com/component/bootstrap-5-simple-contact-form-example/#tab-css
+                      -->
+      <section class="py-3 py-md-5">
+        <div class="container">
+          <div class="row justify-content-md-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+              <h2 class="mb-2 display-5 text-center">Add Server</h2>
+              <p class="text-secondary mb-3 text-center">
+                Add a server to your bot. You can later add a service and connect
+                it with your added server.
+              </p>
+              <hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row justify-content-lg-center">
+          <div class="col-12 col-lg-9">
+            <div class="bg-white border rounded shadow-sm overflow-hidden">
+              <form id="add-form">
+                <div class="row gy-4 gy-xl-5 p-4 p-xl-5">
+                  <div class="col-12">
+                    <label for="name" class="form-label"
+                      >Server Name <span class="text-danger">*</span></label
+                    >
+                    <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    name="name"
+                    placeholder="Server 1"
+                    value="<%= myServer?.server_name %>"
+                    required
+                    />
+                </div>
+
+                <div class="col-12">
+                  <label for="code" class="form-label"
+                    >Server Country Code<span class="text-danger"
+                      >*</span
+                    ></label
+                  >
+                  <input
+                  type="number"
+                  class="form-control"
+                  id="code"
+                  name="code"
+                  placeholder="91"
+                  value="<%= myServer?.country %>"
+                  required
+                  />
+              </div>
+
+              <div class="input-group mb-3">
+                <label class="input-group-text" for="flag"
+                  >Server Country</label
+                >
+                <select
+                  class="form-select"
+                  id="flag"
+                  name="flag"
+                  >
+                  <% var countries = Object.keys(flags) %>
+                    <% countries.forEach(function (val){ %>
+                      <% var isSelected = ""; %>
+                <% if(myServer?.flag) isSelected = myServer.flag == val ? "selected" : ""; 
+                else isSelected = val.toLowerCase() == "india" ? "selected" : "" %>
+                        <option value="<%= val %>" <%=isSelected %>><%= flags[val] %> - <%= val %></option>
+                          <% }) %>
+                          </select>
+                        </div>
+
+                          <div class="col-12">
+                            <div class="d-grid">
+                              <button
+                                class="btn btn-primary btn-md"
+                                type="submit"
+                                id="submit-btn"
+                                >
+                                Submit
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <%- include("./partials/script") %>
+            </body>
+          </html>
