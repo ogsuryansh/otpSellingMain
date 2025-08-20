@@ -1,3 +1,124 @@
 {
-  "version": 2
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "**/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.ico",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.png",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.jpg",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.jpeg",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.gif",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.svg",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/css/(.*)",
+      "dest": "/assets/css/$1",
+      "headers": {
+        "Content-Type": "text/css"
+      }
+    },
+    {
+      "src": "/assets/js/(.*)",
+      "dest": "/assets/js/$1",
+      "headers": {
+        "Content-Type": "application/javascript"
+      }
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/services",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/servers",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/users",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/transactions",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/promo-codes",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/api-config",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/api-config/connection",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/test-api",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

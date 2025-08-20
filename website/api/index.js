@@ -11,6 +11,7 @@ app.set('views', path.join(__dirname, '../views/v3'));
 // Serve static files
 app.use('/styles', express.static(path.join(__dirname, '../public/styles')));
 app.use('/public', express.static(path.join(__dirname, '../public')));
+app.use('/assets', express.static(path.join(__dirname, '../public')));
 
 // Parse JSON and URL-encoded bodies
 app.use(express.json());
@@ -44,7 +45,11 @@ app.get('/', (req, res) => {
     routes: [
       '/api/health',
       '/api/test',
-      '/admin-dashboard'
+      '/admin-dashboard',
+      '/dashboard',
+      '/services',
+      '/servers',
+      '/users'
     ]
   });
 });
@@ -106,6 +111,11 @@ if (database) {
     }
   });
 
+  app.get('/dashboard', async (req, res) => {
+    // Alias for admin-dashboard
+    return res.redirect('/admin-dashboard');
+  });
+
   app.get('/add-server', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
@@ -129,6 +139,150 @@ if (database) {
     }
   });
 
+  app.get('/services', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const services = await database.getServices();
+      const flags = await database.getFlags();
+      
+      res.render('my-services', { 
+        services,
+        flags,
+        page: 'my-services'
+      });
+    } catch (error) {
+      console.error('Error loading services page:', error);
+      res.status(500).json({ 
+        error: 'Error loading services',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/servers', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const servers = await database.getServers();
+      const flags = await database.getFlags();
+      
+      res.json({ 
+        servers,
+        flags,
+        count: servers.length
+      });
+    } catch (error) {
+      console.error('Error loading servers:', error);
+      res.status(500).json({ 
+        error: 'Error loading servers',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/users', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const users = await database.getUsers();
+      const flags = await database.getFlags();
+      
+      res.render('all-users', { 
+        users,
+        flags,
+        page: 'all-users'
+      });
+    } catch (error) {
+      console.error('Error loading users:', error);
+      res.status(500).json({ 
+        error: 'Error loading users',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/transactions', async (req, res) => {
+    res.json({ 
+      message: 'Transactions endpoint',
+      timestamp: new Date().toISOString(),
+      note: 'Transactions functionality to be implemented'
+    });
+  });
+
+  app.get('/promo-codes', async (req, res) => {
+    res.json({ 
+      message: 'Promo codes endpoint',
+      timestamp: new Date().toISOString(),
+      note: 'Promo codes functionality to be implemented'
+    });
+  });
+
+  app.get('/api-config', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('connect-api', { 
+        flags,
+        page: 'connect-api'
+      });
+    } catch (error) {
+      console.error('Error loading api-config page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api-config/connection', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('connect-api', { 
+        flags,
+        page: 'connect-api'
+      });
+    } catch (error) {
+      console.error('Error loading api-config connection page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/test-api', async (req, res) => {
+    res.json({ 
+      message: 'API test endpoint',
+      timestamp: new Date().toISOString(),
+      database: dbInitialized ? 'connected' : 'disconnected',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // Add more routes as needed...
 } else {
   // Fallback routes when database is not available
@@ -140,7 +294,71 @@ if (database) {
     });
   });
 
-  app.get('/add-server', (req, res) => {
+  app.get('/dashboard', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/services', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/servers', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/users', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/transactions', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/promo-codes', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/api-config', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/api-config/connection', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/test-api', (req, res) => {
     res.json({ 
       error: 'Database not available',
       message: 'Database module could not be loaded',
@@ -160,7 +378,14 @@ app.use((req, res) => {
       '/api/health',
       '/api/test',
       '/admin-dashboard',
-      '/add-server'
+      '/dashboard',
+      '/services',
+      '/servers',
+      '/users',
+      '/transactions',
+      '/promo-codes',
+      '/api-config',
+      '/test-api'
     ]
   });
 });
