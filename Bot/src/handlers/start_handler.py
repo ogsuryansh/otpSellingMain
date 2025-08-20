@@ -13,43 +13,57 @@ logger = logging.getLogger(__name__)
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
-    logger.info("🚀 START COMMAND RECEIVED!")
-    logger.info(f"Update object: {update}")
-    logger.info(f"Context object: {context}")
-    
     try:
         user = update.effective_user
         chat_id = update.effective_chat.id
         
-        logger.info(f"👤 User: {user.id} - {user.first_name} (@{user.username})")
-        logger.info(f"💬 Chat ID: {chat_id}")
+        # Use default user data for faster response
+        user_data = {
+            "user_id": user.id,
+            "username": user.username,
+            "first_name": user.first_name,
+            "balance": 0.0,
+            "total_purchased": 0,
+            "total_used": 0,
+            "transaction_history": [],
+            "number_history": [],
+            "smm_history": [],
+            "banned": False
+        }
         
-        # Get or create user in database
-        logger.info("📊 Initializing database...")
-        user_db = UserDatabase()
-        await user_db.initialize()
-        logger.info("✅ Database initialized")
-        
-        logger.info("👤 Getting or creating user...")
-        user_data = await user_db.get_or_create_user(
-            user_id=user.id,
-            username=user.username,
-            first_name=user.first_name
-        )
-        logger.info(f"✅ User data: {user_data}")
+        # Try to get user data from database in background
+        try:
+            user_db = UserDatabase()
+            if not hasattr(user_db, 'client') or user_db.client is None:
+                await user_db.initialize()
+            
+            db_user_data = await user_db.get_or_create_user(
+                user_id=user.id,
+                username=user.username,
+                first_name=user.first_name
+            )
+            # Update with real data if available
+            if db_user_data:
+                user_data.update(db_user_data)
+                
+                # Check if user is banned
+                if db_user_data.get("banned", False):
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text="🚫 You have been banned from using this bot. Please contact support for assistance."
+                    )
+                    return
+                    
+        except Exception as db_error:
+            logger.warning(f"Database error (using default data): {db_error}")
         
         # Create welcome message
-        logger.info("📝 Creating welcome message...")
         welcome_message = create_welcome_message(user_data)
-        logger.info(f"✅ Welcome message: {welcome_message}")
         
         # Create inline keyboard
-        logger.info("⌨️ Creating keyboard...")
         keyboard = create_main_keyboard()
-        logger.info(f"✅ Keyboard created: {keyboard}")
         
-        # Send message
-        logger.info("📤 Sending message...")
+        # Send message immediately
         await context.bot.send_message(
             chat_id=chat_id,
             text=welcome_message,
@@ -57,22 +71,17 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML'
         )
         
-        logger.info(f"✅ Start command handled successfully for user {user.id}")
+        logger.info(f"✅ Start command handled for user {user.id}")
         
     except Exception as e:
         logger.error(f"❌ ERROR in start handler: {e}")
-        logger.error(f"❌ Exception type: {type(e)}")
-        import traceback
-        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
         
         try:
             # Send fallback message
-            logger.info("📤 Sending fallback message...")
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text="👋 Welcome! Something went wrong. Please try again later."
             )
-            logger.info("✅ Fallback message sent")
         except Exception as fallback_error:
             logger.error(f"❌ Failed to send fallback message: {fallback_error}")
 

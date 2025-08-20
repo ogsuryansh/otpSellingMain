@@ -29,41 +29,37 @@ async def handle_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Create admin message
         username = user.username or user.first_name
         message = f"👋 Hello @{username}\n\n"
-        message += "*Admin Commands:*\n\n"
-        message += "👉 Add Balance - `/add 1980442239 100`\n"
-        message += "👉 Cut Balance - `/cut 1980442239 100`\n"
-        message += "👉 User Transaction History - `/trnx 1980442239`\n"
-        message += "👉 User Number History - `/nums 1980442239`\n"
-        message += "👉 User SMM service History - `/smm_history 1980442239`\n"
-        message += "👉 Ban User - `/ban 1980442239`\n"
-        message += "👉 Unban User - `/unban 1980442239`\n"
-        message += "👉 Broadcast a message - `/broadcast hello everyone`\n\n"
-        message += "⚠️ *Remember to replace `1980442239` with actual user ID.*"
+        message += "Admin Commands:\n\n"
+        message += "👉 Add Balance - /add 1980442239 100\n"
+        message += "👉 Cut Balance - /cut 1980442239 100\n"
+        message += "👉 User Transaction History - /trnx 1980442239\n"
+        message += "👉 User Number History - /nums 1980442239\n"
+        message += "👉 User SMM service History - /smm_history 1980442239\n"
+        message += "👉 Ban User - /ban 1980442239\n"
+        message += "👉 Unban User - /unban 1980442239\n"
+        message += "👉 Broadcast a message - /broadcast hello everyone\n\n"
+        message += "⚠️ Remember to replace 1980442239 with actual user id."
         
-        # Create admin keyboard
+        # Create admin keyboard with Web App buttons
+        backend_url = config.BACKEND_URL
+        
         keyboard = [
             [
-                InlineKeyboardButton("Dashboard", callback_data="admin_dashboard"),
+                InlineKeyboardButton("Dashboard", web_app={"url": f"{backend_url}/admin-dashboard"}),
                 InlineKeyboardButton("Users", callback_data="admin_users")
             ],
             [InlineKeyboardButton("Auto Import API Services", callback_data="admin_auto_import")],
             [
-                InlineKeyboardButton("Add Server", callback_data="admin_add_server"),
-                InlineKeyboardButton("Add Service", callback_data="admin_add_service")
+                InlineKeyboardButton("Add Server", web_app={"url": f"{backend_url}/add-server"}),
+                InlineKeyboardButton("Add Service", web_app={"url": f"{backend_url}/add-service"})
             ],
             [
-                InlineKeyboardButton("Connect API", callback_data="admin_connect_api"),
-                InlineKeyboardButton("Edit Bot Settings", callback_data="admin_bot_settings")
+                InlineKeyboardButton("Connect API", web_app={"url": f"{backend_url}/connect-api"}),
+                InlineKeyboardButton("Edit Bot Settings", web_app={"url": f"{backend_url}/bot-settings"})
             ],
-            [InlineKeyboardButton("View My Services", callback_data="admin_view_services")],
-            [
-                InlineKeyboardButton("Add Promocode", callback_data="admin_add_promocode"),
-                InlineKeyboardButton("Add Temp Mail", callback_data="admin_add_temp_mail")
-            ],
-            [
-                InlineKeyboardButton("Add Email", callback_data="admin_add_email"),
-                InlineKeyboardButton("SMM Services", callback_data="admin_smm_services")
-            ],
+            [InlineKeyboardButton("View My Services", web_app={"url": f"{backend_url}/my-services"})],
+            [InlineKeyboardButton("QR Code", web_app={"url": f"{backend_url}/qr-code"})],
+            [InlineKeyboardButton("Add Promocode", callback_data="admin_add_promocode")],
             [InlineKeyboardButton("View Manual Payments", callback_data="admin_manual_payments")]
         ]
         
@@ -71,7 +67,7 @@ async def handle_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=chat_id,
             text=message,
             reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='Markdown'
+            parse_mode='HTML'
         )
         
         logger.info(f"✅ Admin panel sent to user {user.id}")

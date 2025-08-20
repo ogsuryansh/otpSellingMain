@@ -2,7 +2,7 @@
 Callback Query Handler
 """
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
 
@@ -14,11 +14,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle callback queries from inline keyboards"""
     try:
         query = update.callback_query
-        await query.answer()  # Answer the callback query
-        
         callback_data = query.data
-        chat_id = query.message.chat_id
-        message_id = query.message.message_id
+        
+        # Answer callback immediately for better UX
+        await query.answer()
         
         # Handle different callback data
         if callback_data == "services":
@@ -39,6 +38,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await handle_back_to_main(update, context)
         elif callback_data == "transactions":
             await handle_transactions(update, context)
+        elif callback_data.startswith("transactions_page_"):
+            # Handle transaction pagination
+            try:
+                page = int(callback_data.split("_")[-1])
+                await handle_transaction_page(update, context, page)
+            except ValueError:
+                await handle_transactions(update, context)
+        elif callback_data.startswith("history_transactions_page_"):
+            # Handle history transaction pagination
+            try:
+                page = int(callback_data.split("_")[-1])
+                await handle_history_transaction_page(update, context, page)
+            except ValueError:
+                await handle_transaction_history(update, context)
         elif callback_data == "transaction_history":
             await handle_transaction_history(update, context)
         elif callback_data == "number_history":
@@ -51,7 +64,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     except Exception as e:
         logger.error(f"Error in callback handler: {e}")
-        await update.callback_query.answer("Something went wrong. Please try again.")
+        try:
+            await update.callback_query.answer("Something went wrong. Please try again.")
+        except:
+            pass
 
 async def handle_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle services button"""
@@ -88,21 +104,56 @@ async def handle_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
     
-    # Get user data from database (placeholder)
-    balance = 0.00  # This should come from database
-    
-    message = f"💰 Balance Overview :\n"
-    message += f"💸 Available: {balance:.2f} 💎\n"
-    message += f"📩 Total Recharged: 0 💎\n\n"
-    message += "~~ Check transaction below."
-    
-    keyboard = create_balance_keyboard()
-    
-    await query.edit_message_text(
-        text=message,
-        reply_markup=keyboard,
-        parse_mode='HTML'
-    )
+    try:
+        # Get user data from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        user_data = await user_db.get_or_create_user(
+            user_id=user.id,
+            username=user.username,
+            first_name=user.first_name
+        )
+        
+        balance = user_data.get("balance", 0.0)
+        
+        # Calculate total recharged (sum of all credit transactions)
+        transaction_history = user_data.get("transaction_history", [])
+        total_recharged = sum(
+            tx.get("amount", 0) for tx in transaction_history 
+            if tx.get("type") == "credit"
+        )
+        
+        message = f"💰 Balance Overview :\n"
+        message += f"💸 Available: {balance:.2f} 💎\n"
+        message += f"📩 Total Recharged: {total_recharged:.2f} 💎\n\n"
+        message += "~~ Check transaction below."
+        
+        keyboard = create_balance_keyboard()
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting balance: {e}")
+        # Fallback to default values
+        message = f"💰 Balance Overview :\n"
+        message += f"💸 Available: 0.00 💎\n"
+        message += f"📩 Total Recharged: 0.00 💎\n\n"
+        message += "~~ Check transaction below."
+        
+        keyboard = create_balance_keyboard()
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
 
 async def handle_recharge(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle recharge button"""
@@ -149,27 +200,71 @@ async def handle_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
     
-    message = "━━━━━━━━━━━\n"
-    message += "👤 USER PROFILE\n"
-    message += f"🧑 Name : {user.first_name}\n"
-    message += f"🆔 User ID : {user.id}\n"
-    message += "💰 Balance : 0.00 💎\n"
-    message += "📊 Total Numbers Purchased : 0\n"
-    message += "📋 Total Numbers Used : 0\n"
-    message += "🚫 Total Numbers Cancelled : 0\n"
-    message += "📦 Total SMM Orders : 0\n"
-    message += "━━━━━━━━━━━\n"
-    message += "📂 USER NUMBERS HISTORY\n"
-    message += "🍒 You don't have any recent number history.\n"
-    message += "━━━━━━━━━━━"
-    
-    keyboard = create_back_keyboard()
-    
-    await query.edit_message_text(
-        text=message,
-        reply_markup=keyboard,
-        parse_mode='HTML'
-    )
+    try:
+        # Get user data from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        user_data = await user_db.get_or_create_user(
+            user_id=user.id,
+            username=user.username,
+            first_name=user.first_name
+        )
+        
+        balance = user_data.get("balance", 0.0)
+        total_purchased = user_data.get("total_purchased", 0)
+        total_used = user_data.get("total_used", 0)
+        total_cancelled = 0  # Placeholder - can be calculated from number_history
+        total_smm_orders = len(user_data.get("smm_history", []))
+        
+        message = "━━━━━━━━━━━\n"
+        message += "👤 USER PROFILE\n"
+        message += f"🧑 Name : {user.first_name}\n"
+        message += f"🆔 User ID : {user.id}\n"
+        message += f"💰 Balance : {balance:.2f} 💎\n"
+        message += f"📊 Total Numbers Purchased : {total_purchased}\n"
+        message += f"📋 Total Numbers Used : {total_used}\n"
+        message += f"🚫 Total Numbers Cancelled : {total_cancelled}\n"
+        message += f"📦 Total SMM Orders : {total_smm_orders}\n"
+        message += "━━━━━━━━━━━\n"
+        message += "📂 USER NUMBERS HISTORY\n"
+        message += "🍒 You don't have any recent number history.\n"
+        message += "━━━━━━━━━━━"
+        
+        keyboard = create_back_keyboard()
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting profile: {e}")
+        # Fallback to default values
+        message = "━━━━━━━━━━━\n"
+        message += "👤 USER PROFILE\n"
+        message += f"🧑 Name : {user.first_name}\n"
+        message += f"🆔 User ID : {user.id}\n"
+        message += "💰 Balance : 0.00 💎\n"
+        message += "📊 Total Numbers Purchased : 0\n"
+        message += "📋 Total Numbers Used : 0\n"
+        message += "🚫 Total Numbers Cancelled : 0\n"
+        message += "📦 Total SMM Orders : 0\n"
+        message += "━━━━━━━━━━━\n"
+        message += "📂 USER NUMBERS HISTORY\n"
+        message += "🍒 You don't have any recent number history.\n"
+        message += "━━━━━━━━━━━"
+        
+        keyboard = create_back_keyboard()
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
 
 async def handle_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle support button"""
@@ -244,28 +339,179 @@ async def handle_back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
 async def handle_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle transactions button"""
+    """Handle transactions button - show first page"""
+    await handle_transaction_page(update, context, page=1)
+
+async def handle_transaction_page(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):
+    """Handle transaction page display with pagination"""
     query = update.callback_query
+    await query.answer()
     
-    message = "🙈 You don't have any transaction history"
+    try:
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        # Get user transactions with pagination
+        result = await user_db.get_user_transactions(query.from_user.id, page=page, per_page=4)
+        
+        if not result or result["total_transactions"] == 0:
+            await query.edit_message_text(
+                text="🙈 You don't have any transaction history",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("« Back", callback_data="balance")]
+                ])
+            )
+            return
+        
+        # Build transaction message
+        message = f"📩 Page {result['current_page']} of {result['total_pages']}\n\n"
+        
+        for i, transaction in enumerate(result["transactions"], 1):
+            # Format the transaction
+            tx_type = transaction.get("type", "unknown")
+            reason = transaction.get("reason", "No description")
+            amount = transaction.get("amount", 0.0)
+            closing_balance = transaction.get("closing_balance", 0.0)
+            created_at = transaction.get("created_at")
+            
+            # Format date
+            if isinstance(created_at, str):
+                date_str = created_at
+            else:
+                try:
+                    date_str = created_at.strftime("%-m/%-d/%Y, %-I:%M:%S %p")
+                except:
+                    date_str = str(created_at)
+            
+            # Format amount display
+            amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
+            
+            message += f"✉️ {reason}\n"
+            message += f"**{amount_text}**: {amount} 💰\n"
+            message += f"**Closing balance**: {closing_balance} 💎\n"
+            message += f"📅 Created On: {date_str}\n\n"
+        
+        # Create pagination keyboard
+        keyboard = []
+        
+        # Navigation buttons (only if multiple pages)
+        if result["total_pages"] > 1:
+            nav_row = []
+            if result["current_page"] > 1:
+                nav_row.append(InlineKeyboardButton("◀️ Prev", callback_data=f"transactions_page_{result['current_page'] - 1}"))
+            if result["current_page"] < result["total_pages"]:
+                nav_row.append(InlineKeyboardButton("Next ▶️", callback_data=f"transactions_page_{result['current_page'] + 1}"))
+            if nav_row:
+                keyboard.append(nav_row)
+        
+        # Back button
+        keyboard.append([InlineKeyboardButton("« Back", callback_data="balance")])
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error displaying transactions: {e}")
+        await query.edit_message_text(
+            text="❌ Error loading transaction history",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("« Back", callback_data="balance")]
+            ])
+        )
+
+async def handle_history_transaction_page(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):
+    """Handle history transaction page display with pagination"""
+    query = update.callback_query
+    await query.answer()
     
-    keyboard = create_transactions_keyboard()
-    
-    await query.edit_message_text(
-        text=message,
-        reply_markup=keyboard,
-        parse_mode='HTML'
-    )
+    try:
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        # Get user transactions with pagination
+        result = await user_db.get_user_transactions(query.from_user.id, page=page, per_page=4)
+        
+        if not result or result["total_transactions"] == 0:
+            await query.edit_message_text(
+                text="💎 Transaction History\n\n🙈 You don't have any transaction history",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("« Back", callback_data="history")]
+                ])
+            )
+            return
+        
+        # Build transaction message
+        message = f"💎 Transaction History\n📩 Page {result['current_page']} of {result['total_pages']}\n\n"
+        
+        for i, transaction in enumerate(result["transactions"], 1):
+            # Format the transaction
+            tx_type = transaction.get("type", "unknown")
+            reason = transaction.get("reason", "No description")
+            amount = transaction.get("amount", 0.0)
+            closing_balance = transaction.get("closing_balance", 0.0)
+            created_at = transaction.get("created_at")
+            
+            # Format date
+            if isinstance(created_at, str):
+                date_str = created_at
+            else:
+                try:
+                    date_str = created_at.strftime("%-m/%-d/%Y, %-I:%M:%S %p")
+                except:
+                    date_str = str(created_at)
+            
+            # Format amount display
+            amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
+            
+            message += f"✉️ {reason}\n"
+            message += f"**{amount_text}**: {amount} 💰\n"
+            message += f"**Closing balance**: {closing_balance} 💎\n"
+            message += f"📅 Created On: {date_str}\n\n"
+        
+        # Create pagination keyboard
+        keyboard = []
+        
+        # Navigation buttons (only if multiple pages)
+        if result["total_pages"] > 1:
+            nav_row = []
+            if result["current_page"] > 1:
+                nav_row.append(InlineKeyboardButton("◀️ Prev", callback_data=f"history_transactions_page_{result['current_page'] - 1}"))
+            if result["current_page"] < result["total_pages"]:
+                nav_row.append(InlineKeyboardButton("Next ▶️", callback_data=f"history_transactions_page_{result['current_page'] + 1}"))
+            if nav_row:
+                keyboard.append(nav_row)
+        
+        # Back button
+        keyboard.append([InlineKeyboardButton("« Back", callback_data="history")])
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error displaying history transactions: {e}")
+        await query.edit_message_text(
+            text="💎 Transaction History\n\n❌ Error loading transaction history",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("« Back", callback_data="history")]
+            ])
+        )
 
 async def handle_promocode_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle promocode reply messages"""
     try:
         user = update.effective_user
         chat_id = update.effective_chat.id
-        message_id = update.message.message_id
         promocode = update.message.text.strip()
-        
-        logger.info(f"🎫 Promocode reply from user {user.id}: {promocode}")
         
         # Send processing message
         processing_msg = await context.bot.send_message(
@@ -273,9 +519,9 @@ async def handle_promocode_reply(update: Update, context: ContextTypes.DEFAULT_T
             text="⏳ Processing your promocode..."
         )
         
-        # Wait 2 seconds
+        # Wait 1 second instead of 2 for faster response
         import asyncio
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         
         # Send error message
         await context.bot.send_message(
@@ -283,33 +529,96 @@ async def handle_promocode_reply(update: Update, context: ContextTypes.DEFAULT_T
             text="❌ Looks like this promocode does not exist."
         )
         
-        logger.info(f"✅ Promocode processing completed for user {user.id}")
-        
     except Exception as e:
         logger.error(f"❌ Error in promocode reply handler: {e}")
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="❌ Something went wrong processing your promocode."
-        )
+        try:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="❌ Something went wrong processing your promocode."
+            )
+        except:
+            pass
 
 async def handle_transaction_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle transaction history button"""
     query = update.callback_query
     
-    message = "💎 Transaction History\n\n🙈 You don't have any transaction history"
-    
-    # Create back button to return to history menu
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    
-    keyboard = [
-        [InlineKeyboardButton("« Back", callback_data="history")]
-    ]
-    
-    await query.edit_message_text(
-        text=message,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='HTML'
-    )
+    try:
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        # Get user transactions with pagination
+        result = await user_db.get_user_transactions(query.from_user.id, page=1, per_page=4)
+        
+        if not result or result["total_transactions"] == 0:
+            message = "💎 Transaction History\n\n🙈 You don't have any transaction history"
+            keyboard = [
+                [InlineKeyboardButton("« Back", callback_data="history")]
+            ]
+        else:
+            # Build transaction message
+            message = f"💎 Transaction History\n📩 Page {result['current_page']} of {result['total_pages']}\n\n"
+            
+            for i, transaction in enumerate(result["transactions"], 1):
+                # Format the transaction
+                tx_type = transaction.get("type", "unknown")
+                reason = transaction.get("reason", "No description")
+                amount = transaction.get("amount", 0.0)
+                closing_balance = transaction.get("closing_balance", 0.0)
+                created_at = transaction.get("created_at")
+                
+                # Format date
+                if isinstance(created_at, str):
+                    date_str = created_at
+                else:
+                    try:
+                        date_str = created_at.strftime("%-m/%-d/%Y, %-I:%M:%S %p")
+                    except:
+                        date_str = str(created_at)
+                
+                # Format amount display
+                amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
+                
+                message += f"✉️ {reason}\n"
+                message += f"**{amount_text}**: {amount} 💰\n"
+                message += f"**Closing balance**: {closing_balance} 💎\n"
+                message += f"📅 Created On: {date_str}\n\n"
+            
+            # Create pagination keyboard
+            keyboard = []
+            
+            # Navigation buttons (only if multiple pages)
+            if result["total_pages"] > 1:
+                nav_row = []
+                if result["current_page"] > 1:
+                    nav_row.append(InlineKeyboardButton("◀️ Prev", callback_data=f"history_transactions_page_{result['current_page'] - 1}"))
+                if result["current_page"] < result["total_pages"]:
+                    nav_row.append(InlineKeyboardButton("Next ▶️", callback_data=f"history_transactions_page_{result['current_page'] + 1}"))
+                if nav_row:
+                    keyboard.append(nav_row)
+            
+            # Back button
+            keyboard.append([InlineKeyboardButton("« Back", callback_data="history")])
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error displaying transaction history: {e}")
+        message = "💎 Transaction History\n\n❌ Error loading transaction history"
+        keyboard = [
+            [InlineKeyboardButton("« Back", callback_data="history")]
+        ]
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
 
 async def handle_number_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle number history button"""
@@ -345,30 +654,12 @@ async def handle_admin_callback(update: Update, context: ContextTypes.DEFAULT_TY
     # Handle different admin callbacks
     if callback_data == "admin_back":
         await handle_admin_back(update, context)
-    elif callback_data == "admin_dashboard":
-        await handle_admin_dashboard(update, context)
     elif callback_data == "admin_users":
         await handle_admin_users(update, context)
     elif callback_data == "admin_auto_import":
         await handle_admin_auto_import(update, context)
-    elif callback_data == "admin_add_server":
-        await handle_admin_add_server(update, context)
-    elif callback_data == "admin_add_service":
-        await handle_admin_add_service(update, context)
-    elif callback_data == "admin_connect_api":
-        await handle_admin_connect_api(update, context)
-    elif callback_data == "admin_bot_settings":
-        await handle_admin_bot_settings(update, context)
-    elif callback_data == "admin_view_services":
-        await handle_admin_view_services(update, context)
     elif callback_data == "admin_add_promocode":
         await handle_admin_add_promocode(update, context)
-    elif callback_data == "admin_add_temp_mail":
-        await handle_admin_add_temp_mail(update, context)
-    elif callback_data == "admin_add_email":
-        await handle_admin_add_email(update, context)
-    elif callback_data == "admin_smm_services":
-        await handle_admin_smm_services(update, context)
     elif callback_data == "admin_manual_payments":
         await handle_admin_manual_payments(update, context)
     else:
@@ -381,48 +672,46 @@ async def handle_admin_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Recreate the admin message
     username = query.from_user.username or query.from_user.first_name
     message = f"👋 Hello @{username}\n\n"
-    message += "*Admin Commands:*\n\n"
-    message += "👉 Add Balance - `/add 1980442239 100`\n"
-    message += "👉 Cut Balance - `/cut 1980442239 100`\n"
-    message += "👉 User Transaction History - `/trnx 1980442239`\n"
-    message += "👉 User Number History - `/nums 1980442239`\n"
-    message += "👉 User SMM service History - `/smm_history 1980442239`\n"
-    message += "👉 Ban User - `/ban 1980442239`\n"
-    message += "👉 Unban User - `/unban 1980442239`\n"
-    message += "👉 Broadcast a message - `/broadcast hello everyone`\n\n"
-    message += "⚠️ *Remember to replace `1980442239` with actual user ID.*"
+    message += "Admin Commands:\n\n"
+    message += "👉 Add Balance - /add 1980442239 100\n"
+    message += "👉 Cut Balance - /cut 1980442239 100\n"
+    message += "👉 User Transaction History - /trnx 1980442239\n"
+    message += "👉 User Number History - /nums 1980442239\n"
+    message += "👉 User SMM service History - /smm_history 1980442239\n"
+    message += "👉 Ban User - /ban 1980442239\n"
+    message += "👉 Unban User - /unban 1980442239\n"
+    message += "👉 Broadcast a message - /broadcast hello everyone\n\n"
+    message += "⚠️ Remember to replace 1980442239 with actual user id."
     
-    # Create admin keyboard
+    # Create admin keyboard with Web App buttons
+    from src.config.bot_config import BotConfig
+    config = BotConfig()
+    backend_url = config.BACKEND_URL
+    
     keyboard = [
         [
-            InlineKeyboardButton("Dashboard", callback_data="admin_dashboard"),
+            InlineKeyboardButton("Dashboard", web_app={"url": f"{backend_url}/admin-dashboard"}),
             InlineKeyboardButton("Users", callback_data="admin_users")
         ],
         [InlineKeyboardButton("Auto Import API Services", callback_data="admin_auto_import")],
         [
-            InlineKeyboardButton("Add Server", callback_data="admin_add_server"),
-            InlineKeyboardButton("Add Service", callback_data="admin_add_service")
+            InlineKeyboardButton("Add Server", web_app={"url": f"{backend_url}/add-server"}),
+            InlineKeyboardButton("Add Service", web_app={"url": f"{backend_url}/add-service"})
         ],
         [
-            InlineKeyboardButton("Connect API", callback_data="admin_connect_api"),
-            InlineKeyboardButton("Edit Bot Settings", callback_data="admin_bot_settings")
+            InlineKeyboardButton("Connect API", web_app={"url": f"{backend_url}/connect-api"}),
+            InlineKeyboardButton("Edit Bot Settings", web_app={"url": f"{backend_url}/bot-settings"})
         ],
-        [InlineKeyboardButton("View My Services", callback_data="admin_view_services")],
-        [
-            InlineKeyboardButton("Add Promocode", callback_data="admin_add_promocode"),
-            InlineKeyboardButton("Add Temp Mail", callback_data="admin_add_temp_mail")
-        ],
-        [
-            InlineKeyboardButton("Add Email", callback_data="admin_add_email"),
-            InlineKeyboardButton("SMM Services", callback_data="admin_smm_services")
-        ],
+        [InlineKeyboardButton("View My Services", web_app={"url": f"{backend_url}/my-services"})],
+        [InlineKeyboardButton("QR Code", web_app={"url": f"{backend_url}/qr-code"})],
+        [InlineKeyboardButton("Add Promocode", callback_data="admin_add_promocode")],
         [InlineKeyboardButton("View Manual Payments", callback_data="admin_manual_payments")]
     ]
     
     await query.edit_message_text(
         text=message,
         reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='Markdown'
+        parse_mode='HTML'
     )
 
 async def handle_admin_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -12,8 +12,10 @@ class BotConfig:
         self.BOT_TOKEN = self._get_env_var("BOT_TOKEN")
         self.MONGODB_URI = self._get_env_var("MONGODB_URI", "mongodb://localhost:27017/otp_bot")
         self.MONGODB_DATABASE = self._get_env_var("MONGODB_DATABASE", "otp_bot")
+        self.MONGODB_COLLECTION = self._get_env_var("MONGODB_COLLECTION", "users")
         self.SUPPORT_USERNAME = self._get_env_var("SUPPORT_USERNAME", "@support")
         self.ADMIN_USER_ID = self._get_env_var("ADMIN_USER_ID")
+        self.BACKEND_URL = self._get_env_var("BACKEND_URL", "http://localhost:3000")
         
         # Validate required environment variables
         if not self.BOT_TOKEN:
