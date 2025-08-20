@@ -633,6 +633,56 @@ class Database {
       throw error;
     }
   }
+
+  // User methods
+  async getUsers() {
+    try {
+      const usersCollection = this.getCollection('users');
+      const users = await usersCollection.find({}).toArray();
+      return users;
+    } catch (error) {
+      console.error('Error getting users:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(userId) {
+    try {
+      const usersCollection = this.getCollection('users');
+      const user = await usersCollection.findOne({ userId: userId });
+      return user;
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      throw error;
+    }
+  }
+
+  // Update flags method
+  async updateFlags(flagsData) {
+    try {
+      const flagsCollection = this.getCollection('flags');
+      
+      // Clear existing flags
+      await flagsCollection.deleteMany({});
+      
+      // Insert new flags
+      const flagsArray = Object.entries(flagsData).map(([country, flag]) => ({
+        country,
+        flag,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      if (flagsArray.length > 0) {
+        await flagsCollection.insertMany(flagsArray);
+      }
+      
+      return { success: true, message: 'Flags updated successfully' };
+    } catch (error) {
+      console.error('Error updating flags:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new Database();
