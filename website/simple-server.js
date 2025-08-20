@@ -559,6 +559,40 @@ app.delete('/delete-flag/:id', async (req, res) => {
   }
 });
 
+// Bot Stats API - Get real data from bot's MongoDB
+app.get('/api/bot-stats', async (req, res) => {
+  try {
+    console.log('🔍 [DEBUG] /api/bot-stats endpoint accessed');
+    
+    // Get bot statistics from database
+    const botStats = await database.getBotStats();
+    
+    console.log('✅ [DEBUG] Bot stats retrieved for API:', botStats);
+    
+    res.json({
+      success: true,
+      data: botStats,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Error in /api/bot-stats:', error);
+          res.status(500).json({
+        success: false,
+        error: error.message,
+        data: {
+          totalUsers: 0,
+          todaysUsers: 0,
+          totalBalance: 0,
+          todaysTransactions: 0,
+          totalTransactions: 0,
+          todaysNumbersSold: 0,
+          totalNumbersSold: 0
+        }
+      });
+  }
+});
+
 // Initialize database connection and start server
 async function startServer() {
   try {

@@ -37,60 +37,20 @@ class Database {
     return this.db.collection(collectionName);
   }
 
-  // Dashboard data methods - Only real data from MongoDB
+  // Dashboard data methods - Get real data from bot's MongoDB
   async getDashboardData() {
     try {
-      console.log('🔍 [DEBUG] Starting getDashboardData() method');
+      console.log('🔍 [DEBUG] Starting getDashboardData() method - Fetching from bot database');
       
-      const statsCollection = this.getCollection('stats');
+      // Connect to bot's MongoDB to get real data
+      const botStats = await this.getBotStats();
+      
+      console.log('✅ [DEBUG] Bot stats retrieved:', botStats);
+      
+      // Get additional data from website database
       const servicesCollection = this.getCollection('services');
       const serversCollection = this.getCollection('servers');
       
-      console.log('📊 [DEBUG] Collections initialized - stats, services, servers');
-      
-      // Get real stats from database
-      console.log('🔍 [DEBUG] Querying stats collection for dashboard data...');
-      let stats = await statsCollection.findOne({ type: 'dashboard' });
-      
-      if (stats) {
-        console.log('✅ [DEBUG] Found existing stats in database:');
-        console.log('   - todaysEarnings:', stats.todaysEarnings);
-        console.log('   - totalEarnings:', stats.totalEarnings);
-        console.log('   - todaysUsers:', stats.todaysUsers);
-        console.log('   - totalUsers:', stats.totalUsers);
-        console.log('   - todaysSold:', stats.todaysSold);
-        console.log('   - totalSold:', stats.totalSold);
-        console.log('   - createdAt:', stats.createdAt);
-        console.log('   - updatedAt:', stats.updatedAt);
-      } else {
-        console.log('⚠️  [DEBUG] No stats found in database, creating default stats...');
-        
-        // Check environment variables
-        console.log('🔧 [DEBUG] Environment variables:');
-        console.log('   - DEFAULT_TODAYS_EARNINGS:', process.env.DEFAULT_TODAYS_EARNINGS || 'NOT SET (using ₹0)');
-        console.log('   - DEFAULT_TOTAL_EARNINGS:', process.env.DEFAULT_TOTAL_EARNINGS || 'NOT SET (using ₹0)');
-        console.log('   - DEFAULT_TODAYS_USERS:', process.env.DEFAULT_TODAYS_USERS || 'NOT SET (using 0)');
-        console.log('   - DEFAULT_TOTAL_USERS:', process.env.DEFAULT_TOTAL_USERS || 'NOT SET (using 0)');
-        console.log('   - DEFAULT_TODAYS_SOLD:', process.env.DEFAULT_TODAYS_SOLD || 'NOT SET (using 0)');
-        console.log('   - DEFAULT_TOTAL_SOLD:', process.env.DEFAULT_TOTAL_SOLD || 'NOT SET (using 0)');
-        
-        stats = {
-          type: 'dashboard',
-          todaysEarnings: process.env.DEFAULT_TODAYS_EARNINGS || '₹0',
-          totalEarnings: process.env.DEFAULT_TOTAL_EARNINGS || '₹0',
-          todaysUsers: parseInt(process.env.DEFAULT_TODAYS_USERS) || 0,
-          totalUsers: parseInt(process.env.DEFAULT_TOTAL_USERS) || 0,
-          todaysSold: parseInt(process.env.DEFAULT_TODAYS_SOLD) || 0,
-          totalSold: parseInt(process.env.DEFAULT_TOTAL_SOLD) || 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        console.log('💾 [DEBUG] Inserting new default stats into database:', stats);
-        await statsCollection.insertOne(stats);
-        console.log('✅ [DEBUG] Default stats inserted successfully');
-      }
-
       // Get real top services from database
       console.log('🔍 [DEBUG] Querying top services from services collection...');
       const topServices = await servicesCollection
@@ -100,10 +60,7 @@ class Database {
         .toArray();
       
       console.log('📈 [DEBUG] Top services found:', topServices.length);
-      topServices.forEach((service, index) => {
-        console.log(`   ${index + 1}. ${service.name || service.service_name} - Users: ${service.users || 0} - Price: ${service.price}`);
-      });
-
+      
       // Get server count
       console.log('🔍 [DEBUG] Counting servers...');
       const serverCount = await serversCollection.countDocuments();
@@ -113,32 +70,180 @@ class Database {
       console.log('🔍 [DEBUG] Counting services...');
       const serviceCount = await servicesCollection.countDocuments();
       console.log('📦 [DEBUG] Total services found:', serviceCount);
-
-      const result = {
-        ...stats,
+      
+      // Use bot data for dashboard
+      const stats = {
+        todaysEarnings: `₹${botStats.totalBalance.toFixed(2)}`,
+        totalEarnings: `₹${botStats.totalBalance.toFixed(2)}`,
+        todaysUsers: botStats.todaysUsers,
+        totalUsers: botStats.totalUsers,
+        todaysSold: botStats.todaysNumbersSold, // Use actual number purchases
+        totalSold: botStats.totalNumbersSold,   // Use actual number purchases
         topServices: topServices,
         serverCount: serverCount,
-        serviceCount: serviceCount
+        serviceCount: serviceCount,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
-      console.log('🎯 [DEBUG] Final dashboard data being returned:');
-      console.log('   - todaysEarnings:', result.todaysEarnings);
-      console.log('   - totalEarnings:', result.totalEarnings);
-      console.log('   - todaysUsers:', result.todaysUsers);
-      console.log('   - totalUsers:', result.totalUsers);
-      console.log('   - todaysSold:', result.todaysSold);
-      console.log('   - totalSold:', result.totalSold);
-      console.log('   - serverCount:', result.serverCount);
-      console.log('   - serviceCount:', result.serviceCount);
-      console.log('   - topServices count:', result.topServices.length);
+      console.log('📊 [DEBUG] Dashboard stats prepared from bot data:', stats);
       
-      console.log('✅ [DEBUG] getDashboardData() completed successfully');
-      return result;
+      return stats;
+      
     } catch (error) {
-      console.error('❌ [DEBUG] Error getting dashboard data:', error);
-      throw error;
+      console.error('❌ [DEBUG] Error getting dashboard data from bot:', error);
+      
+      // Fallback to default values if bot data fails
+      return {
+        todaysEarnings: '₹0',
+        totalEarnings: '₹0',
+        todaysUsers: 0,
+        totalUsers: 0,
+        todaysSold: 0,
+        totalSold: 0,
+        topServices: [],
+        serverCount: 0,
+        serviceCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
     }
   }
+  
+  // New method to get bot statistics
+  async getBotStats() {
+    try {
+      console.log('🔍 [DEBUG] Connecting to bot MongoDB...');
+      
+      // Use the same MongoDB connection as the bot
+      const botUri = process.env.MONGODB_URI || 'mongodb+srv://vishalgiri0044:kR9oUspxQUtYdund@cluster0.zdudgbg.mongodb.net/otp_bot?retryWrites=true&w=majority&appName=Cluster0';
+      const botDbName = process.env.MONGODB_DATABASE || 'otp_bot';
+      const botCollection = process.env.MONGODB_COLLECTION || 'users';
+      
+      const botClient = new MongoClient(botUri);
+      await botClient.connect();
+      const botDb = botClient.db(botDbName);
+      const usersCollection = botDb.collection(botCollection);
+      
+      console.log('✅ [DEBUG] Connected to bot MongoDB successfully');
+      
+      // Get total users count
+      const totalUsers = await usersCollection.countDocuments();
+      
+      // Get today's new users (users created today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todaysUsers = await usersCollection.countDocuments({
+        created_at: { $gte: today }
+      });
+      
+      // Get total balance across all users
+      const balanceResult = await usersCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalBalance: { $sum: "$balance" }
+          }
+        }
+      ]).toArray();
+      
+      const totalBalance = balanceResult.length > 0 ? balanceResult[0].totalBalance : 0;
+      
+      // Get recent transactions count (last 24 hours)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const recentTransactions = await usersCollection.aggregate([
+        {
+          $unwind: "$transaction_history"
+        },
+        {
+          $match: {
+            "transaction_history.created_at": { $gte: yesterday }
+          }
+        },
+        {
+          $count: "count"
+        }
+      ]).toArray();
+      
+      const todaysTransactions = recentTransactions.length > 0 ? recentTransactions[0].count : 0;
+      
+      // Get total transactions
+      const totalTransactionsResult = await usersCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalTransactions: { $sum: { $size: "$transaction_history" } }
+          }
+        }
+      ]).toArray();
+      
+      const totalTransactions = totalTransactionsResult.length > 0 ? totalTransactionsResult[0].totalTransactions : 0;
+      
+      // Get number purchases (transactions that are debits for number purchases)
+      const numberPurchases = await usersCollection.aggregate([
+        {
+          $unwind: "$transaction_history"
+        },
+        {
+          $match: {
+            "transaction_history.type": "debit",
+            "transaction_history.reason": { $regex: /number|purchase|bought/i }
+          }
+        },
+        {
+          $count: "count"
+        }
+      ]).toArray();
+      
+      const totalNumbersSold = numberPurchases.length > 0 ? numberPurchases[0].count : 0;
+      
+      // Get today's number purchases
+      const todaysNumberPurchases = await usersCollection.aggregate([
+        {
+          $unwind: "$transaction_history"
+        },
+        {
+          $match: {
+            "transaction_history.type": "debit",
+            "transaction_history.reason": { $regex: /number|purchase|bought/i },
+            "transaction_history.created_at": { $gte: yesterday }
+          }
+        },
+        {
+          $count: "count"
+        }
+      ]).toArray();
+      
+      const todaysNumbersSold = todaysNumberPurchases.length > 0 ? todaysNumberPurchases[0].count : 0;
+      
+      await botClient.close();
+      
+      return {
+        totalUsers,
+        todaysUsers,
+        totalBalance: parseFloat(totalBalance.toFixed(2)),
+        todaysTransactions,
+        totalTransactions,
+        todaysNumbersSold,
+        totalNumbersSold
+      };
+      
+    } catch (error) {
+      console.error('❌ [DEBUG] Error getting bot stats:', error);
+      return {
+        totalUsers: 0,
+        todaysUsers: 0,
+        totalBalance: 0,
+        todaysTransactions: 0,
+        totalTransactions: 0,
+        todaysNumbersSold: 0,
+        totalNumbersSold: 0
+      };
+    }
+  }
+
+
 
   // Server methods
   async getServers() {

@@ -56,16 +56,16 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <p class="text-sm font-medium text-gray-600 mb-1">Today's Payment</p>
-              <p class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">₹<%= todaysEarnings %></p>
+              <p id="todays-earnings" class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">₹<%= todaysEarnings %></p>
             </div>
             <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="fas fa-money-bill-wave text-white text-xl"></i>
             </div>
           </div>
           <div class="pt-4 border-t border-gray-100">
-            <p class="text-sm text-gray-600">
-              Total: <span class="font-semibold text-green-600">₹<%= totalEarnings %></span>
-            </p>
+                          <p class="text-sm text-gray-600">
+                Total: <span id="total-earnings" class="font-semibold text-green-600">₹<%= totalEarnings %></span>
+              </p>
           </div>
         </div>
       </div>
@@ -77,16 +77,16 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <p class="text-sm font-medium text-gray-600 mb-1">Today's Users</p>
-              <p class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"><%= todaysUsers %></p>
+              <p id="todays-users" class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"><%= todaysUsers %></p>
             </div>
             <div class="w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="fas fa-users text-white text-xl"></i>
             </div>
           </div>
           <div class="pt-4 border-t border-gray-100">
-            <p class="text-sm text-gray-600">
-              Total: <span class="font-semibold text-green-600"><%= totalUsers %></span> users
-            </p>
+                          <p class="text-sm text-gray-600">
+                Total: <span id="total-users" class="font-semibold text-green-600"><%= totalUsers %></span> users
+              </p>
           </div>
         </div>
       </div>
@@ -98,7 +98,7 @@
           <div class="flex items-center justify-between mb-4">
             <div>
               <p class="text-sm font-medium text-gray-600 mb-1">Numbers Sold</p>
-              <p class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent"><%= todaysSold %></p>
+              <p id="todays-sold" class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent"><%= todaysSold %></p>
             </div>
             <div class="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
               <i class="fas fa-chart-bar text-white text-xl"></i>
@@ -106,7 +106,7 @@
           </div>
           <div class="pt-4 border-t border-gray-100">
             <p class="text-sm text-gray-600">
-              Total: <span class="font-semibold text-green-600"><%= totalSold %></span> sold
+              Total: <span id="total-sold" class="font-semibold text-green-600"><%= totalSold %></span> sold
             </p>
           </div>
         </div>
@@ -224,6 +224,71 @@
   </footer>
 
   <script>
+    // Function to fetch and update real-time bot data
+    async function updateBotStats() {
+      try {
+        console.log('🔄 Fetching real-time bot stats...');
+        
+        const response = await fetch('/api/bot-stats');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const data = result.data;
+          
+          // Update the stats cards with real bot data
+          updateStatCard('todays-earnings', `₹${data.totalBalance.toFixed(2)}`);
+          updateStatCard('total-earnings', `₹${data.totalBalance.toFixed(2)}`);
+          updateStatCard('todays-users', data.todaysUsers);
+          updateStatCard('total-users', data.totalUsers);
+          updateStatCard('todays-sold', data.todaysNumbersSold);
+          updateStatCard('total-sold', data.totalNumbersSold);
+          
+          console.log('✅ Bot stats updated successfully:', data);
+          
+          // Add a small indicator that data is live
+          addLiveIndicator();
+          
+        } else {
+          console.error('❌ Failed to fetch bot stats:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ Error updating bot stats:', error);
+      }
+    }
+    
+    // Function to update individual stat cards
+    function updateStatCard(statId, value) {
+      const element = document.getElementById(statId);
+      if (element) {
+        element.textContent = value;
+        // Add a subtle animation
+        element.classList.add('animate-pulse');
+        setTimeout(() => {
+          element.classList.remove('animate-pulse');
+        }, 1000);
+      }
+    }
+    
+    // Function to add live data indicator
+    function addLiveIndicator() {
+      const header = document.querySelector('h1');
+      if (header && !document.getElementById('live-indicator')) {
+        const indicator = document.createElement('span');
+        indicator.id = 'live-indicator';
+        indicator.className = 'ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+        indicator.innerHTML = '<span class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span>Live Data';
+        header.appendChild(indicator);
+      }
+    }
+    
+    // Update stats every 30 seconds
+    setInterval(updateBotStats, 30000);
+    
+    // Initial update on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateBotStats();
+    });
+
     async function clearDashboardStats() {
       if (!confirm('Are you sure you want to clear the dashboard stats? This will reset all values to default.')) {
         return;

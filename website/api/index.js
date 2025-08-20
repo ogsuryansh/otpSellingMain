@@ -37,37 +37,53 @@ app.get('/api/test', (req, res) => {
 });
 
 // Basic route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Hello from Vercel!',
-    status: 'success',
-    timestamp: new Date().toISOString(),
-    routes: [
-      '/api/health',
-      '/api/test',
-      '/admin-dashboard',
-      '/dashboard',
-      '/services',
-      '/servers',
-      '/users',
-      '/add-server',
-      '/add-service',
-      '/add-mail',
-      '/bot-settings',
-      '/connect-api',
-      '/my-services',
-      '/my-smm-service',
-      '/smm-services',
-      '/temp-mail',
-      '/mail-inbox',
-      '/manual-payments',
-      '/promocode',
-      '/qr-code',
-      '/upload-img',
-      '/user-details',
-      '/manage-flags'
-    ]
-  });
+app.get('/', async (req, res) => {
+  if (!dbInitialized) {
+    return res.json({ 
+      message: 'Hello from Vercel!',
+      status: 'success',
+      timestamp: new Date().toISOString(),
+      database: 'not connected',
+      routes: [
+        '/api/health',
+        '/api/test',
+        '/admin-dashboard',
+        '/dashboard',
+        '/services',
+        '/servers',
+        '/users',
+        '/add-server',
+        '/add-service',
+        '/add-mail',
+        '/bot-settings',
+        '/connect-api',
+        '/my-services',
+        '/my-smm-service',
+        '/smm-services',
+        '/temp-mail',
+        '/mail-inbox',
+        '/manual-payments',
+        '/promocode',
+        '/qr-code',
+        '/upload-img',
+        '/user-details',
+        '/manage-flags'
+      ]
+    });
+  }
+  
+  try {
+    // Redirect to dashboard to show actual data
+    return res.redirect('/admin-dashboard');
+  } catch (error) {
+    console.error('Error loading main page:', error);
+    res.json({ 
+      message: 'Hello from Vercel!',
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Try to load database and add routes
@@ -213,8 +229,11 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const setting = await database.getSettings(); // Get actual settings from database
+      
       res.render('bot-settings', { 
         flags,
+        setting,
         page: 'bot-settings'
       });
     } catch (error) {
@@ -261,16 +280,12 @@ if (database) {
     }
     
     try {
-      const services = await database.getServices();
+      const myServicesData = await database.getMyServicesData(); // Get actual data from database
       const flags = await database.getFlags();
-      const servers = await database.getServers();
-      const data = services; // Template expects 'data' not 'services'
       
       res.render('my-services', { 
-        data,
-        services,
+        data: myServicesData,
         flags,
-        servers,
         page: 'my-services'
       });
     } catch (error) {
@@ -513,13 +528,11 @@ if (database) {
     }
     
     try {
-      const services = await database.getServices();
+      const myServicesData = await database.getMyServicesData(); // Get actual data from database
       const flags = await database.getFlags();
-      const data = services; // Template expects 'data' not 'services'
       
       res.render('my-services', { 
-        data,
-        services,
+        data: myServicesData,
         flags,
         page: 'my-services'
       });
@@ -659,6 +672,172 @@ if (database) {
       database: dbInitialized ? 'connected' : 'disconnected',
       environment: process.env.NODE_ENV || 'development'
     });
+  });
+
+  // API endpoints to show actual data
+  app.get('/api/dashboard-data', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const dashboardData = await database.getDashboardData();
+      res.json({
+        success: true,
+        data: dashboardData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting dashboard data:', error);
+      res.status(500).json({ 
+        error: 'Error getting dashboard data',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/servers', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const servers = await database.getServers();
+      res.json({
+        success: true,
+        data: servers,
+        count: servers.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting servers:', error);
+      res.status(500).json({ 
+        error: 'Error getting servers',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/services', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const services = await database.getServices();
+      res.json({
+        success: true,
+        data: services,
+        count: services.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting services:', error);
+      res.status(500).json({ 
+        error: 'Error getting services',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/users', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const users = await database.getUsers();
+      res.json({
+        success: true,
+        data: users,
+        count: users.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting users:', error);
+      res.status(500).json({ 
+        error: 'Error getting users',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/settings', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const settings = await database.getSettings();
+      res.json({
+        success: true,
+        data: settings,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting settings:', error);
+      res.status(500).json({ 
+        error: 'Error getting settings',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/flags', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.json({
+        success: true,
+        data: flags,
+        count: Object.keys(flags).length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting flags:', error);
+      res.status(500).json({ 
+        error: 'Error getting flags',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/api/my-services-data', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const myServicesData = await database.getMyServicesData();
+      res.json({
+        success: true,
+        data: myServicesData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting my services data:', error);
+      res.status(500).json({ 
+        error: 'Error getting my services data',
+        message: error.message
+      });
+    }
   });
 
   // Add more routes as needed...
