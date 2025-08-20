@@ -110,6 +110,74 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/add-server",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/add-service",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/add-mail",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/bot-settings",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/connect-api",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/my-services",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/my-smm-service",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/smm-services",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/temp-mail",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/mail-inbox",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/manual-payments",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/promocode",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/qr-code",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/upload-img",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/user-details",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/manage-flags",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/auto-import/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/",
       "dest": "/api/index.js"
     },

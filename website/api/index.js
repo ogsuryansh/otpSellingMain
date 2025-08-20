@@ -49,7 +49,23 @@ app.get('/', (req, res) => {
       '/dashboard',
       '/services',
       '/servers',
-      '/users'
+      '/users',
+      '/add-server',
+      '/add-service',
+      '/add-mail',
+      '/bot-settings',
+      '/connect-api',
+      '/my-services',
+      '/my-smm-service',
+      '/smm-services',
+      '/temp-mail',
+      '/mail-inbox',
+      '/manual-payments',
+      '/promocode',
+      '/qr-code',
+      '/upload-img',
+      '/user-details',
+      '/manage-flags'
     ]
   });
 });
@@ -132,6 +148,339 @@ if (database) {
       });
     } catch (error) {
       console.error('Error loading add-server page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/add-service', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('add-service', { 
+        flags,
+        page: 'add-service'
+      });
+    } catch (error) {
+      console.error('Error loading add-service page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/add-mail', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('add-mail', { 
+        flags,
+        page: 'add-mail'
+      });
+    } catch (error) {
+      console.error('Error loading add-mail page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/bot-settings', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('bot-settings', { 
+        flags,
+        page: 'bot-settings'
+      });
+    } catch (error) {
+      console.error('Error loading bot-settings page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/connect-api', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('connect-api', { 
+        flags,
+        page: 'connect-api'
+      });
+    } catch (error) {
+      console.error('Error loading connect-api page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/my-services', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const services = await database.getServices();
+      const flags = await database.getFlags();
+      
+      res.render('my-services', { 
+        services,
+        flags,
+        page: 'my-services'
+      });
+    } catch (error) {
+      console.error('Error loading my-services page:', error);
+      res.status(500).json({ 
+        error: 'Error loading services',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/my-smm-service', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('my-smm-service', { 
+        flags,
+        page: 'my-smm-service'
+      });
+    } catch (error) {
+      console.error('Error loading my-smm-service page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/smm-services', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('smm-services', { 
+        flags,
+        page: 'smm-services'
+      });
+    } catch (error) {
+      console.error('Error loading smm-services page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/temp-mail', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('temp-mail', { 
+        flags,
+        page: 'temp-mail'
+      });
+    } catch (error) {
+      console.error('Error loading temp-mail page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/mail-inbox', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('mail-inbox', { 
+        flags,
+        page: 'mail-inbox'
+      });
+    } catch (error) {
+      console.error('Error loading mail-inbox page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/manual-payments', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('manual-payments', { 
+        flags,
+        page: 'manual-payments'
+      });
+    } catch (error) {
+      console.error('Error loading manual-payments page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/promocode', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('promocode', { 
+        flags,
+        page: 'promocode'
+      });
+    } catch (error) {
+      console.error('Error loading promocode page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/qr-code', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('qr-code', { 
+        flags,
+        page: 'qr-code'
+      });
+    } catch (error) {
+      console.error('Error loading qr-code page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/upload-img', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('upload-img', { 
+        flags,
+        page: 'upload-img'
+      });
+    } catch (error) {
+      console.error('Error loading upload-img page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/user-details', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('user-details', { 
+        flags,
+        page: 'user-details'
+      });
+    } catch (error) {
+      console.error('Error loading user-details page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/manage-flags', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flags = await database.getFlags();
+      res.render('manage-flags', { 
+        flags,
+        page: 'manage-flags'
+      });
+    } catch (error) {
+      console.error('Error loading manage-flags page:', error);
       res.status(500).json({ 
         error: 'Error loading page',
         message: error.message
@@ -302,6 +651,134 @@ if (database) {
     });
   });
 
+  app.get('/add-server', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/add-service', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/add-mail', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/bot-settings', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/connect-api', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/my-services', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/my-smm-service', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/smm-services', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/temp-mail', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/mail-inbox', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/manual-payments', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/promocode', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/qr-code', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/upload-img', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/user-details', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/manage-flags', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   app.get('/services', (req, res) => {
     res.json({ 
       error: 'Database not available',
@@ -379,6 +856,22 @@ app.use((req, res) => {
       '/api/test',
       '/admin-dashboard',
       '/dashboard',
+      '/add-server',
+      '/add-service',
+      '/add-mail',
+      '/bot-settings',
+      '/connect-api',
+      '/my-services',
+      '/my-smm-service',
+      '/smm-services',
+      '/temp-mail',
+      '/mail-inbox',
+      '/manual-payments',
+      '/promocode',
+      '/qr-code',
+      '/upload-img',
+      '/user-details',
+      '/manage-flags',
       '/services',
       '/servers',
       '/users',
