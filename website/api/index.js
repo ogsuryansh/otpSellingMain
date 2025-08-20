@@ -263,9 +263,11 @@ if (database) {
     try {
       const services = await database.getServices();
       const flags = await database.getFlags();
-      const servers = await database.getServers(); // Add servers data
+      const servers = await database.getServers();
+      const data = services; // Template expects 'data' not 'services'
       
       res.render('my-services', { 
+        data,
         services,
         flags,
         servers,
@@ -421,8 +423,11 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const type = req.query.type || 'default'; // Template expects 'type' parameter
+      
       res.render('qr-code', { 
         flags,
+        type,
         page: 'qr-code'
       });
     } catch (error) {
@@ -510,8 +515,10 @@ if (database) {
     try {
       const services = await database.getServices();
       const flags = await database.getFlags();
+      const data = services; // Template expects 'data' not 'services'
       
       res.render('my-services', { 
+        data,
         services,
         flags,
         page: 'my-services'
