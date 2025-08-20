@@ -687,7 +687,8 @@ if (database) {
   app.post('/add-server', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
-        error: 'Database connection not available' 
+        status: 0,
+        message: 'Database connection not available' 
       });
     }
     
@@ -696,7 +697,7 @@ if (database) {
       const result = await database.addServer(serverData);
       
       res.json({
-        success: true,
+        status: 1,
         message: 'Server added successfully',
         data: result,
         timestamp: new Date().toISOString()
@@ -704,7 +705,7 @@ if (database) {
     } catch (error) {
       console.error('Error adding server:', error);
       res.status(500).json({ 
-        error: 'Error adding server',
+        status: 0,
         message: error.message
       });
     }
@@ -713,7 +714,8 @@ if (database) {
   app.post('/add-service', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
-        error: 'Database connection not available' 
+        status: 0,
+        message: 'Database connection not available' 
       });
     }
     
@@ -722,7 +724,7 @@ if (database) {
       const result = await database.addService(serviceData);
       
       res.json({
-        success: true,
+        status: 1,
         message: 'Service added successfully',
         data: result,
         timestamp: new Date().toISOString()
@@ -730,7 +732,7 @@ if (database) {
     } catch (error) {
       console.error('Error adding service:', error);
       res.status(500).json({ 
-        error: 'Error adding service',
+        status: 0,
         message: error.message
       });
     }
@@ -739,7 +741,8 @@ if (database) {
   app.post('/connect-api', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
-        error: 'Database connection not available' 
+        status: 0,
+        message: 'Database connection not available' 
       });
     }
     
@@ -748,7 +751,7 @@ if (database) {
       const result = await database.addApi(apiData);
       
       res.json({
-        success: true,
+        status: 1,
         message: 'API connected successfully',
         data: result,
         timestamp: new Date().toISOString()
@@ -756,7 +759,7 @@ if (database) {
     } catch (error) {
       console.error('Error connecting API:', error);
       res.status(500).json({ 
-        error: 'Error connecting API',
+        status: 0,
         message: error.message
       });
     }
@@ -765,7 +768,8 @@ if (database) {
   app.post('/bot-settings', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
-        error: 'Database connection not available' 
+        status: 0,
+        message: 'Database connection not available' 
       });
     }
     
@@ -774,7 +778,7 @@ if (database) {
       const result = await database.updateSettings(settingsData);
       
       res.json({
-        success: true,
+        status: 1,
         message: 'Settings updated successfully',
         data: result,
         timestamp: new Date().toISOString()
@@ -782,7 +786,7 @@ if (database) {
     } catch (error) {
       console.error('Error updating settings:', error);
       res.status(500).json({ 
-        error: 'Error updating settings',
+        status: 0,
         message: error.message
       });
     }
