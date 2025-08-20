@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "vercel-server.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/styles/(.*)",
+      "destination": "/public/styles/$1"
+    },
+    {
+      "source": "/public/(.*)",
+      "destination": "/public/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/vercel-server.js"
+    }
+  ]
+}
