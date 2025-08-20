@@ -180,7 +180,22 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
-      const servers = await database.getServers();
+      let servers = [];
+      
+      try {
+        servers = await database.getServers();
+        console.log('🔍 [DEBUG] /add-service - Servers fetched:', servers);
+        console.log('🔍 [DEBUG] /add-service - Servers count:', servers ? servers.length : 'null');
+        
+        // Log the structure of the first server if it exists
+        if (servers && servers.length > 0) {
+          console.log('🔍 [DEBUG] /add-service - First server structure:', JSON.stringify(servers[0], null, 2));
+        }
+      } catch (serverError) {
+        console.error('❌ [DEBUG] Error fetching servers:', serverError);
+        servers = []; // Fallback to empty array
+      }
+      
       const myService = null; // Default value for new service
       
       res.render('add-service', { 

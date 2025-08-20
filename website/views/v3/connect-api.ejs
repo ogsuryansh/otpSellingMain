@@ -3,6 +3,23 @@
 <head>
   <%- include('partials/head') %>
   <title>Connect API - OTP Bot</title>
+  <style>
+    /* Fix dropdown overflow */
+    select {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+    }
+    select option {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    /* Ensure dropdown doesn't overflow container */
+    .bg-white {
+      overflow: visible;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
   <!-- Include Navbar -->
@@ -29,12 +46,18 @@
             name="server" 
             required
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            style="max-height: 200px; overflow-y: auto;"
           >
             <option value="">Choose a server</option>
-            <% servers.forEach(function (obj, i){ %>
-              <% var isSelected = obj.id == myApi?.server_id ? "selected" : "" %>
-              <option value="<%= obj.id %>" <%= isSelected %> ><%= obj.server_name %></option>
-            <% }) %>
+            <% if (servers && servers.length > 0) { %>
+              <% servers.forEach(function (obj, i){ %>
+                <% var isSelected = (obj._id || obj.id) == myApi?.server_id ? "selected" : "" %>
+                <% var serverName = obj.server_name || obj.name || 'Server ' + (i + 1) %>
+                <option value="<%= obj._id || obj.id %>" <%= isSelected %> title="<%= serverName %>"><%= serverName.length > 50 ? serverName.substring(0, 50) + '...' : serverName %></option>
+              <% }) %>
+            <% } else { %>
+              <option value="" disabled>No servers available. Please add servers first.</option>
+            <% } %>
           </select>
         </div>
 

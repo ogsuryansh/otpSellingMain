@@ -23,6 +23,21 @@
       max-width: 100%;
       overflow-x: hidden;
     }
+    /* Fix dropdown overflow */
+    select {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+    }
+    select option {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    /* Ensure dropdown doesn't overflow container */
+    .form-card {
+      overflow: visible;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 min-h-screen overflow-x-hidden">
@@ -53,11 +68,18 @@
             name="server" 
             required
             class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 input-focus bg-white"
+            style="max-height: 200px; overflow-y: auto;"
           >
-            <% servers.forEach(function (obj, i){ %>
-              <% var isSelected = obj.id == myService?.server_id ? "selected" : "" %>
-              <option value="<%= obj.id %>" <%= isSelected %> ><%= obj.server_name %></option>
-            <% }) %>
+            <option value="">Choose a server</option>
+            <% if (servers && servers.length > 0) { %>
+              <% servers.forEach(function (obj, i){ %>
+                <% var isSelected = (obj._id || obj.id) == myService?.server_id ? "selected" : "" %>
+                <% var serverName = obj.server_name || obj.name || 'Server ' + (i + 1) %>
+                <option value="<%= obj._id || obj.id %>" <%= isSelected %> title="<%= serverName %>"><%= serverName.length > 50 ? serverName.substring(0, 50) + '...' : serverName %></option>
+              <% }) %>
+            <% } else { %>
+              <option value="" disabled>No servers available. Please add servers first.</option>
+            <% } %>
           </select>
         </div>
 
