@@ -788,6 +788,73 @@ class Database {
       throw error;
     }
   }
+
+  // Promocode methods
+  async getPromocodes() {
+    try {
+      const promocodesCollection = this.getCollection('promocodes');
+      return await promocodesCollection.find({}).sort({ createdAt: -1 }).toArray();
+    } catch (error) {
+      console.error('Error getting promocodes:', error);
+      throw error;
+    }
+  }
+
+  async addPromocode(promocodeData) {
+    try {
+      const promocodesCollection = this.getCollection('promocodes');
+      const result = await promocodesCollection.insertOne({
+        ...promocodeData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      return result;
+    } catch (error) {
+      console.error('Error adding promocode:', error);
+      throw error;
+    }
+  }
+
+  async updatePromocode(id, promocodeData) {
+    try {
+      const promocodesCollection = this.getCollection('promocodes');
+      const result = await promocodesCollection.updateOne(
+        { _id: id },
+        { 
+          $set: {
+            ...promocodeData,
+            updatedAt: new Date()
+          }
+        }
+      );
+      return result;
+    } catch (error) {
+      console.error('Error updating promocode:', error);
+      throw error;
+    }
+  }
+
+  async deletePromocode(id) {
+    try {
+      const promocodesCollection = this.getCollection('promocodes');
+      const result = await promocodesCollection.deleteOne({ _id: id });
+      return result;
+    } catch (error) {
+      console.error('Error deleting promocode:', error);
+      throw error;
+    }
+  }
+
+  async getPromocodeById(id) {
+    try {
+      const promocodesCollection = this.getCollection('promocodes');
+      const promocode = await promocodesCollection.findOne({ _id: id });
+      return promocode;
+    } catch (error) {
+      console.error('Error getting promocode by ID:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new Database();

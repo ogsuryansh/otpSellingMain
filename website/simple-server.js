@@ -211,6 +211,23 @@ app.get('/manage-flags', async (req, res) => {
   }
 });
 
+app.get('/promocode', async (req, res) => {
+  try {
+    const promocodes = await database.getPromocodes();
+    res.render('promocode', { 
+      promocodes,
+      myPromocode: null,
+      page: 'promocode'
+    });
+  } catch (error) {
+    console.error('Error loading promocode page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading promocode data',
+      page: 'promocode'
+    });
+  }
+});
+
 // Clear dashboard stats route
 app.post('/clear-dashboard-stats', async (req, res) => {
   console.log('🗑️ [DEBUG] /clear-dashboard-stats route accessed');
@@ -556,6 +573,58 @@ app.delete('/delete-flag/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting flag:', error);
     res.status(500).json({ status: 0, message: 'Error deleting flag' });
+  }
+});
+
+// Promocode management endpoints
+app.post('/add-promocode', async (req, res) => {
+  try {
+    const { code, max_uses, amount } = req.body;
+    
+    if (!code || !max_uses || !amount) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'All fields are required' 
+      });
+    }
+
+    const promocodeData = {
+      code: code.toUpperCase(),
+      max_uses: parseInt(max_uses),
+      current_uses: 0,
+      amount: parseFloat(amount),
+      is_active: true
+    };
+
+    const result = await database.addPromocode(promocodeData);
+    
+    res.json({ 
+      status: 1, 
+      message: 'Promocode added successfully!',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error adding promocode:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error adding promocode' 
+    });
+  }
+});
+
+app.delete('/delete-promocode/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await database.deletePromocode(id);
+    
+    if (result.deletedCount > 0) {
+      res.json({ status: 1, message: 'Promocode deleted successfully!' });
+    } else {
+      res.status(404).json({ status: 0, message: 'Promocode not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting promocode:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting promocode' });
   }
 });
 

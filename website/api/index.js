@@ -282,10 +282,12 @@ if (database) {
     try {
       const myServicesData = await database.getMyServicesData(); // Get actual data from database
       const flags = await database.getFlags();
+      const url = '/my-services?page=1&'; // Add the missing url variable
       
       res.render('my-services', { 
         data: myServicesData,
         flags,
+        url,
         page: 'my-services'
       });
     } catch (error) {
@@ -439,10 +441,12 @@ if (database) {
     try {
       const flags = await database.getFlags();
       const type = req.query.type || 'default'; // Template expects 'type' parameter
+      const url = req.query.url || '/assets/images/qr-code-placeholder.png'; // Add the missing url variable
       
       res.render('qr-code', { 
         flags,
         type,
+        url,
         page: 'qr-code'
       });
     } catch (error) {
@@ -530,10 +534,12 @@ if (database) {
     try {
       const myServicesData = await database.getMyServicesData(); // Get actual data from database
       const flags = await database.getFlags();
+      const url = '/services?page=1&'; // Add the missing url variable
       
       res.render('my-services', { 
         data: myServicesData,
         flags,
+        url,
         page: 'my-services'
       });
     } catch (error) {
