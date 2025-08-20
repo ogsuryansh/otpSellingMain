@@ -138,15 +138,18 @@ async def handle_transaction_history(update: Update, context: ContextTypes.DEFAU
         for i, tx in enumerate(transactions[-10:], 1):  # Show last 10 transactions
             tx_type = "➕" if tx.get("type") == "credit" else "➖"
             amount = tx.get("amount", 0)
-            description = tx.get("description", "No description")
-            timestamp = tx.get("timestamp", "Unknown time")
+            reason = tx.get("reason", "No description")
+            created_at = tx.get("created_at", "Unknown time")
             
-            if isinstance(timestamp, str):
-                time_str = timestamp
+            # Format timestamp
+            if isinstance(created_at, str):
+                time_str = created_at
+            elif hasattr(created_at, 'strftime'):
+                time_str = created_at.strftime("%Y-%m-%d %H:%M:%S")
             else:
-                time_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                time_str = "Unknown time"
             
-            message += f"{i}. {tx_type} {amount} 💎 - {description}\n"
+            message += f"{i}. {tx_type} {amount} 💎 - {reason}\n"
             message += f"   📅 {time_str}\n\n"
         
         await update.message.reply_text(message)
