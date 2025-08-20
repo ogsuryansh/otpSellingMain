@@ -164,8 +164,13 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const servers = await database.getServers();
+      const myService = null; // Default value for new service
+      
       res.render('add-service', { 
         flags,
+        servers,
+        myService,
         page: 'add-service'
       });
     } catch (error) {
