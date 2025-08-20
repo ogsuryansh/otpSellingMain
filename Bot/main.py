@@ -7,11 +7,12 @@ import logging
 import os
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, InlineQueryHandler, filters, ContextTypes
 
 from src.handlers.start_handler import handle_start
 from src.handlers.callback_handler import handle_callback, handle_promocode_reply
 from src.handlers.admin_handler import handle_admin
+from src.handlers.inline_handler import handle_inline_query
 from src.handlers.admin_commands import (
     handle_add_balance, handle_cut_balance, handle_transaction_history,
     handle_number_history, handle_smm_history, handle_ban_user,
@@ -113,13 +114,14 @@ def main():
         
         application.add_handler(CallbackQueryHandler(handle_callback))
         application.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_promocode_reply))
+        application.add_handler(InlineQueryHandler(handle_inline_query))
         
         print("Bot starting...")
         print("Bot is running... Send /start to test!")
         
         # Run polling with optimized settings
         application.run_polling(
-            allowed_updates=['message', 'callback_query'],
+            allowed_updates=['message', 'callback_query', 'inline_query'],
             drop_pending_updates=True,
             read_timeout=30,
             write_timeout=30,

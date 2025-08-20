@@ -494,3 +494,139 @@ class UserDatabase:
         except Exception as e:
             logger.error(f"❌ Error using promocode: {e}")
             return {"valid": False, "message": "Error processing promocode"}
+
+    async def get_services(self) -> List[Dict[str, Any]]:
+        """Get all services from the website's MongoDB"""
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            logger.info("🔍 Fetching services from database...")
+            
+            # Use existing database connection but different collection
+            services_collection = self.db['services']
+            
+            # First, let's check if the collection exists and has any documents
+            total_services = await services_collection.count_documents({})
+            logger.info(f"📊 Total services in collection: {total_services}")
+            
+            # Get all services (not just active ones for now)
+            cursor = services_collection.find({})
+            all_services = await cursor.to_list(length=None)
+            
+            logger.info(f"📦 Found {len(all_services)} total services")
+            
+            # Log all services for debugging
+            for i, service in enumerate(all_services):
+                logger.info(f"📦 Service {i+1}: {service.get('name', 'Unknown')} - {service.get('price', '₹0')} - Server: {service.get('server_name', 'Unknown')}")
+            
+            # Filter for active services if the field exists
+            active_services = []
+            for service in all_services:
+                # Check if service is active (default to True if field doesn't exist)
+                is_active = service.get("is_active", True)
+                if is_active:
+                    active_services.append(service)
+            
+            logger.info(f"✅ Found {len(active_services)} active services")
+            
+            # Format services for bot
+            formatted_services = []
+            for service in active_services:
+                formatted_service = {
+                    "id": str(service.get("_id")),
+                    "name": service.get("name", "Unknown Service"),
+                    "description": service.get("description", "No description available"),
+                    "price": service.get("price", "₹0"),
+                    "server": service.get("server_name", "Unknown Server")
+                }
+                formatted_services.append(formatted_service)
+            
+            logger.info(f"✅ Formatted {len(formatted_services)} services for bot display")
+            
+            # If no services found, add some sample services for testing
+            if len(formatted_services) == 0:
+                logger.info("📝 No services found, adding sample services for testing...")
+                await self.add_sample_services()
+                # Try to get services again
+                cursor = services_collection.find({})
+                all_services = await cursor.to_list(length=None)
+                active_services = [s for s in all_services if s.get("is_active", True)]
+                
+                for service in active_services:
+                    formatted_service = {
+                        "id": str(service.get("_id")),
+                        "name": service.get("service_name", "Unknown Service"),
+                        "description": service.get("service_description", "No description available"),
+                        "price": service.get("service_price", "0"),
+                        "server": service.get("server_name", "Unknown Server")
+                    }
+                    formatted_services.append(formatted_service)
+                
+                logger.info(f"✅ Added {len(formatted_services)} sample services")
+            
+            return formatted_services
+            
+        except Exception as e:
+            logger.error(f"❌ Error fetching services: {e}")
+            return []
+
+    async def add_sample_services(self):
+        """Add sample services for testing"""
+        try:
+            services_collection = self.db['services']
+            
+            sample_services = [
+                {
+                    "name": "WhatsApp",
+                    "description": "Get OTP for WhatsApp verification. Fast and reliable service.",
+                    "price": "₹5.00",
+                    "server_name": "India Server",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Telegram",
+                    "description": "Get OTP for Telegram verification. Instant delivery.",
+                    "price": "₹3.00",
+                    "server_name": "India Server",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Instagram",
+                    "description": "Get OTP for Instagram verification. High success rate.",
+                    "price": "₹4.00",
+                    "server_name": "India Server",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Facebook",
+                    "description": "Get OTP for Facebook verification. Secure and reliable.",
+                    "price": "₹2.00",
+                    "server_name": "India Server",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Gmail",
+                    "description": "Get OTP for Gmail verification. Premium service.",
+                    "price": "₹4.50",
+                    "server_name": "India Server",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                }
+            ]
+            
+            result = await services_collection.insert_many(sample_services)
+            logger.info(f"✅ Added {len(result.inserted_ids)} sample services to database")
+            
+        except Exception as e:
+            logger.error(f"❌ Error adding sample services: {e}")

@@ -70,34 +70,63 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
 async def handle_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle services button"""
+    """Handle services button - Show services list"""
     query = update.callback_query
-    message = "📦 Available Services:\n\n"
-    message += "🔸 WhatsApp - ₹5.00\n"
-    message += "🔸 Telegram - ₹3.00\n"
-    message += "🔸 Instagram - ₹4.00\n"
-    message += "🔸 Facebook - ₹2.00\n"
-    message += "🔸 Twitter - ₹3.50\n"
-    message += "🔸 Gmail - ₹4.50\n\n"
-    message += "Select a service to purchase:"
     
-    # Create services keyboard (placeholder data)
-    services = [
-        {"id": 1, "name": "WhatsApp", "price": "5.00"},
-        {"id": 2, "name": "Telegram", "price": "3.00"},
-        {"id": 3, "name": "Instagram", "price": "4.00"},
-        {"id": 4, "name": "Facebook", "price": "2.00"},
-        {"id": 5, "name": "Twitter", "price": "3.50"},
-        {"id": 6, "name": "Gmail", "price": "4.50"}
-    ]
-    
-    keyboard = create_services_keyboard(services)
-    
-    await query.edit_message_text(
-        text=message,
-        reply_markup=keyboard,
-        parse_mode='HTML'
-    )
+    try:
+        # Get services from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        logger.info("🔍 Fetching services from database...")
+        services = await user_db.get_services()
+        
+        logger.info(f"📊 Services result: {len(services) if services else 0} services found")
+        
+        if not services:
+            logger.warning("⚠️ No services found in database")
+            await query.edit_message_text(
+                text="📦 No services available at the moment.\n\nPlease check back later!",
+                reply_markup=create_back_keyboard()
+            )
+            return
+        
+        logger.info(f"✅ Found {len(services)} services in database")
+        
+        # Create services list message
+        message = f"📦 <b>Available Services</b>\n\n"
+        message += f"✅ Found {len(services)} services\n\n"
+        
+        # Add each service to the message
+        for i, service in enumerate(services[:10], 1):  # Show first 10 services
+            message += f"{i}. <b>{service['name']}</b>\n"
+            message += f"   📝 {service['description']}\n\n"
+        
+        if len(services) > 10:
+            message += f"... and {len(services) - 10} more services\n\n"
+        
+        message += "💡 <b>To use inline search:</b>\n"
+        message += "1. Type @YourBotName in any chat\n"
+        message += "2. Search for services by name\n"
+        message += "3. Click on any service to view details"
+        
+        # Create keyboard with back button
+        keyboard = create_back_keyboard()
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=keyboard,
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error in handle_services: {e}")
+        await query.edit_message_text(
+            text="❌ Error loading services. Please try again later.",
+            reply_markup=create_back_keyboard()
+        )
 
 async def handle_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle balance button"""
