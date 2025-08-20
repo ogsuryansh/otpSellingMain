@@ -235,8 +235,13 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const servers = await database.getServers();
+      const myApi = null; // Default value for new API
+      
       res.render('connect-api', { 
         flags,
+        servers,
+        myApi,
         page: 'connect-api'
       });
     } catch (error) {
@@ -258,10 +263,12 @@ if (database) {
     try {
       const services = await database.getServices();
       const flags = await database.getFlags();
+      const servers = await database.getServers(); // Add servers data
       
       res.render('my-services', { 
         services,
         flags,
+        servers,
         page: 'my-services'
       });
     } catch (error) {
@@ -593,8 +600,13 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const servers = await database.getServers();
+      const myApi = null; // Default value for new API
+      
       res.render('connect-api', { 
         flags,
+        servers,
+        myApi,
         page: 'connect-api'
       });
     } catch (error) {
@@ -615,8 +627,13 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const servers = await database.getServers();
+      const myApi = null; // Default value for new API
+      
       res.render('connect-api', { 
         flags,
+        servers,
+        myApi,
         page: 'connect-api'
       });
     } catch (error) {
