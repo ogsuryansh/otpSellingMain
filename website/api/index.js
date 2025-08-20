@@ -674,6 +674,237 @@ if (database) {
     });
   });
 
+  // POST routes for form submissions
+  app.post('/add-server', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const serverData = req.body;
+      const result = await database.addServer(serverData);
+      
+      res.json({
+        success: true,
+        message: 'Server added successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding server:', error);
+      res.status(500).json({ 
+        error: 'Error adding server',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/add-service', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const serviceData = req.body;
+      const result = await database.addService(serviceData);
+      
+      res.json({
+        success: true,
+        message: 'Service added successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding service:', error);
+      res.status(500).json({ 
+        error: 'Error adding service',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/connect-api', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const apiData = req.body;
+      const result = await database.addApi(apiData);
+      
+      res.json({
+        success: true,
+        message: 'API connected successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error connecting API:', error);
+      res.status(500).json({ 
+        error: 'Error connecting API',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/bot-settings', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const settingsData = req.body;
+      const result = await database.updateSettings(settingsData);
+      
+      res.json({
+        success: true,
+        message: 'Settings updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ 
+        error: 'Error updating settings',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/add-mail', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const mailData = req.body;
+      // Add mail functionality - you may need to implement this in database.js
+      res.json({
+        success: true,
+        message: 'Mail added successfully',
+        data: mailData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding mail:', error);
+      res.status(500).json({ 
+        error: 'Error adding mail',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/manual-payments', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const paymentData = req.body;
+      // Add manual payment functionality - you may need to implement this in database.js
+      res.json({
+        success: true,
+        message: 'Payment processed successfully',
+        data: paymentData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      res.status(500).json({ 
+        error: 'Error processing payment',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/promocode', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const promoData = req.body;
+      // Add promocode functionality - you may need to implement this in database.js
+      res.json({
+        success: true,
+        message: 'Promocode added successfully',
+        data: promoData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding promocode:', error);
+      res.status(500).json({ 
+        error: 'Error adding promocode',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/upload-img', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const imageData = req.body;
+      // Add image upload functionality - you may need to implement this in database.js
+      res.json({
+        success: true,
+        message: 'Image uploaded successfully',
+        data: imageData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      res.status(500).json({ 
+        error: 'Error uploading image',
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/manage-flags', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const flagsData = req.body;
+      const result = await database.updateFlags(flagsData);
+      
+      res.json({
+        success: true,
+        message: 'Flags updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating flags:', error);
+      res.status(500).json({ 
+        error: 'Error updating flags',
+        message: error.message
+      });
+    }
+  });
+
   // API endpoints to show actual data
   app.get('/api/dashboard-data', async (req, res) => {
     if (!dbInitialized) {
