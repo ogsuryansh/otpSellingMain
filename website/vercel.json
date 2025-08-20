@@ -2,22 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel-server.js",
+      "src": "vercel-server-simple.js",
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/styles/(.*)",
-      "dest": "/public/styles/$1"
+      "source": "/styles/(.*)",
+      "destination": "/public/styles/$1"
     },
     {
-      "src": "/public/(.*)",
-      "dest": "/public/$1"
+      "source": "/public/(.*)",
+      "destination": "/public/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/vercel-server.js"
+      "source": "/(.*)",
+      "destination": "/vercel-server-simple.js"
     }
   ]
 }

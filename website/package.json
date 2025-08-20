@@ -2,9 +2,9 @@
 	"name": "rental-otp-bot",
 	"version": "1.0.0",
 	"description": "Telegram OTP Bot for local development",
-	"main": "vercel-server.js",
+	"main": "vercel-server-simple.js",
 	"scripts": {
-		"start": "node vercel-server.js",
+		"start": "node vercel-server-simple.js",
 		"vercel-build": "echo 'Build completed'",
 		"pm2:start": "pm2 start server.js --name my-tg-bot --output logs.txt --error errors.txt --log-date-format \"YYYY-MM-DD HH:mm:ss Z\" --time",
 		"pm2:stop": "pm2 stop my-tg-bot",
