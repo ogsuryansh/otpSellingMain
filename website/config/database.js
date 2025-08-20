@@ -292,11 +292,32 @@ class Database {
 
   async deleteServer(id) {
     try {
+      console.log(`🗑️ [DEBUG] Deleting server with ID: ${id}`);
       const serversCollection = this.getCollection('servers');
-      const result = await serversCollection.deleteOne({ _id: id });
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      console.log(`🔍 [DEBUG] Searching for server with ObjectId: ${objectId}`);
+      const result = await serversCollection.deleteOne({ _id: objectId });
+      console.log(`✅ [DEBUG] Server delete result: ${result.deletedCount} deleted`);
       return result;
     } catch (error) {
-      console.error('Error deleting server:', error);
+      console.error('❌ [DEBUG] Error deleting server:', error);
+      throw error;
+    }
+  }
+
+  async deleteAllServers() {
+    try {
+      console.log('🗑️ [DEBUG] Deleting all servers');
+      const serversCollection = this.getCollection('servers');
+      const result = await serversCollection.deleteMany({});
+      console.log(`✅ [DEBUG] Bulk server delete result: ${result.deletedCount} deleted`);
+      return result;
+    } catch (error) {
+      console.error('❌ [DEBUG] Error deleting all servers:', error);
       throw error;
     }
   }
@@ -348,11 +369,19 @@ class Database {
 
   async deleteService(id) {
     try {
+      console.log(`🗑️ [DEBUG] Deleting service with ID: ${id}`);
       const servicesCollection = this.getCollection('services');
-      const result = await servicesCollection.deleteOne({ _id: id });
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      console.log(`🔍 [DEBUG] Searching for service with ObjectId: ${objectId}`);
+      const result = await servicesCollection.deleteOne({ _id: objectId });
+      console.log(`✅ [DEBUG] Service delete result: ${result.deletedCount} deleted`);
       return result;
     } catch (error) {
-      console.error('Error deleting service:', error);
+      console.error('❌ [DEBUG] Error deleting service:', error);
       throw error;
     }
   }
@@ -437,17 +466,17 @@ class Database {
 
   async deleteApi(id) {
     try {
-      console.log('🗑️ [DEBUG] deleteApi called with id:', id);
+      console.log(`🗑️ [DEBUG] Deleting API with ID: ${id}`);
       const apisCollection = this.getCollection('apis');
       
       // Convert string id to ObjectId
       const { ObjectId } = require('mongodb');
       const objectId = new ObjectId(id);
       
-      console.log('🔍 [DEBUG] Searching for API with ObjectId:', objectId);
+      console.log(`🔍 [DEBUG] Searching for API with ObjectId: ${objectId}`);
       const result = await apisCollection.deleteOne({ _id: objectId });
       
-      console.log('✅ [DEBUG] Delete result:', result);
+      console.log(`✅ [DEBUG] API delete result: ${result.deletedCount} deleted`);
       return result;
     } catch (error) {
       console.error('❌ [DEBUG] Error deleting API:', error);
@@ -730,11 +759,19 @@ class Database {
 
   async deleteFlag(id) {
     try {
+      console.log(`🗑️ [DEBUG] Deleting flag with ID: ${id}`);
       const flagsCollection = this.getCollection('flags');
-      const result = await flagsCollection.deleteOne({ _id: id });
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      console.log(`🔍 [DEBUG] Searching for flag with ObjectId: ${objectId}`);
+      const result = await flagsCollection.deleteOne({ _id: objectId });
+      console.log(`✅ [DEBUG] Flag delete result: ${result.deletedCount} deleted`);
       return result;
     } catch (error) {
-      console.error('Error deleting flag:', error);
+      console.error('❌ [DEBUG] Error deleting flag:', error);
       throw error;
     }
   }
@@ -836,11 +873,19 @@ class Database {
 
   async deletePromocode(id) {
     try {
+      console.log(`🗑️ [DEBUG] Deleting promocode with ID: ${id}`);
       const promocodesCollection = this.getCollection('promocodes');
-      const result = await promocodesCollection.deleteOne({ _id: id });
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      console.log(`🔍 [DEBUG] Searching for promocode with ObjectId: ${objectId}`);
+      const result = await promocodesCollection.deleteOne({ _id: objectId });
+      console.log(`✅ [DEBUG] Promocode delete result: ${result.deletedCount} deleted`);
       return result;
     } catch (error) {
-      console.error('Error deleting promocode:', error);
+      console.error('❌ [DEBUG] Error deleting promocode:', error);
       throw error;
     }
   }

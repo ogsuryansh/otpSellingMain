@@ -440,52 +440,80 @@ app.post('/bot-settings', async (req, res) => {
 // Delete endpoints
 app.delete('/delete-server/:id', async (req, res) => {
   try {
+    console.log(`🗑️ [DEBUG] Deleting server with ID: ${req.params.id}`);
     const { id } = req.params;
     const result = await database.deleteServer(id);
     
     if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted server with ID: ${id}`);
       // Update dashboard stats after deleting server
       await database.updateDashboardStats();
       res.json({ status: 1, message: 'Server deleted successfully!' });
     } else {
+      console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
       res.status(404).json({ status: 0, message: 'Server not found' });
     }
   } catch (error) {
-    console.error('Error deleting server:', error);
+    console.error('❌ [DEBUG] Error deleting server:', error);
     res.status(500).json({ status: 0, message: 'Error deleting server' });
+  }
+});
+
+app.delete('/delete-all-servers', async (req, res) => {
+  try {
+    console.log('🗑️ [DEBUG] Bulk deleting all servers');
+    const result = await database.deleteAllServers();
+    
+    console.log(`✅ [DEBUG] Successfully deleted ${result.deletedCount} servers`);
+    // Update dashboard stats after deleting servers
+    await database.updateDashboardStats();
+    res.json({ 
+      status: 1, 
+      message: `Successfully deleted ${result.deletedCount} servers!`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error bulk deleting servers:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting servers' });
   }
 });
 
 app.delete('/delete-service/:id', async (req, res) => {
   try {
+    console.log(`🗑️ [DEBUG] Deleting service with ID: ${req.params.id}`);
     const { id } = req.params;
     const result = await database.deleteService(id);
     
     if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted service with ID: ${id}`);
       // Update dashboard stats after deleting service
       await database.updateDashboardStats();
       res.json({ status: 1, message: 'Service deleted successfully!' });
     } else {
+      console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
       res.status(404).json({ status: 0, message: 'Service not found' });
     }
   } catch (error) {
-    console.error('Error deleting service:', error);
+    console.error('❌ [DEBUG] Error deleting service:', error);
     res.status(500).json({ status: 0, message: 'Error deleting service' });
   }
 });
 
 app.delete('/delete-api/:id', async (req, res) => {
   try {
+    console.log(`🗑️ [DEBUG] Deleting API with ID: ${req.params.id}`);
     const { id } = req.params;
     const result = await database.deleteApi(id);
     
     if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted API with ID: ${id}`);
       res.json({ status: 1, message: 'API deleted successfully!' });
     } else {
+      console.log(`❌ [DEBUG] API not found with ID: ${id}`);
       res.status(404).json({ status: 0, message: 'API not found' });
     }
   } catch (error) {
-    console.error('Error deleting API:', error);
+    console.error('❌ [DEBUG] Error deleting API:', error);
     res.status(500).json({ status: 0, message: 'Error deleting API' });
   }
 });

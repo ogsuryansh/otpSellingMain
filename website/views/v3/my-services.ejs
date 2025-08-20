@@ -220,32 +220,102 @@
     });
 
     // Delete functionality
-    function deleteData(type, from, data) {
+    async function deleteData(type, from, data) {
       if (confirm(`Are you sure you want to delete this ${type}?`)) {
-        // Simulate delete
-        const row = document.getElementById(`${type}-${data.id}`);
-        if (row) {
-          row.style.opacity = '0.5';
-          setTimeout(() => {
-            row.remove();
-            showMessage(`${type} deleted successfully!`, 'success');
-          }, 500);
+        try {
+          console.log(`🗑️ [DEBUG] Deleting ${type} with ID: ${data.id}`);
+          
+          // Show loading state
+          const row = document.getElementById(`${type}-${data.id}`);
+          if (row) {
+            row.style.opacity = '0.5';
+          }
+          
+          // Call backend API to delete from MongoDB
+          const response = await fetch(`/delete-${type.slice(0, -1)}/${data.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.status === 1) {
+            console.log(`✅ [DEBUG] Successfully deleted ${type} with ID: ${data.id}`);
+            // Remove row from DOM
+            setTimeout(() => {
+              if (row) {
+                row.remove();
+              }
+              showMessage(`${type} deleted successfully!`, 'success');
+            }, 500);
+          } else {
+            console.error(`❌ [DEBUG] Failed to delete ${type}: ${result.message}`);
+            // Restore row appearance
+            if (row) {
+              row.style.opacity = '1';
+            }
+            showMessage(`Failed to delete ${type}: ${result.message}`, 'error');
+          }
+        } catch (error) {
+          console.error(`❌ [DEBUG] Error deleting ${type}:`, error);
+          // Restore row appearance
+          const row = document.getElementById(`${type}-${data.id}`);
+          if (row) {
+            row.style.opacity = '1';
+          }
+          showMessage(`Error deleting ${type}. Please try again.`, 'error');
         }
       }
     }
 
     // Bulk delete functionality
-    function bulkDelete() {
+    async function bulkDelete() {
       if (confirm('Are you sure you want to delete ALL servers and their services? This action cannot be undone.')) {
-        // Simulate bulk delete
-        const serverRows = document.querySelectorAll('[id^="servers-"]');
-        serverRows.forEach(row => {
-          row.style.opacity = '0.5';
-        });
-        setTimeout(() => {
-          serverRows.forEach(row => row.remove());
-          showMessage('All servers deleted successfully!', 'success');
-        }, 500);
+        try {
+          console.log('🗑️ [DEBUG] Starting bulk delete of all servers');
+          
+          // Show loading state
+          const serverRows = document.querySelectorAll('[id^="servers-"]');
+          serverRows.forEach(row => {
+            row.style.opacity = '0.5';
+          });
+          
+          // Call backend API to delete all servers from MongoDB
+          const response = await fetch('/delete-all-servers', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.status === 1) {
+            console.log(`✅ [DEBUG] Successfully deleted ${result.deletedCount} servers`);
+            // Remove rows from DOM
+            setTimeout(() => {
+              serverRows.forEach(row => row.remove());
+              showMessage(`Successfully deleted ${result.deletedCount} servers!`, 'success');
+            }, 500);
+          } else {
+            console.error(`❌ [DEBUG] Failed to bulk delete servers: ${result.message}`);
+            // Restore rows appearance
+            serverRows.forEach(row => {
+              row.style.opacity = '1';
+            });
+            showMessage(`Failed to delete servers: ${result.message}`, 'error');
+          }
+        } catch (error) {
+          console.error('❌ [DEBUG] Error in bulk delete:', error);
+          // Restore rows appearance
+          const serverRows = document.querySelectorAll('[id^="servers-"]');
+          serverRows.forEach(row => {
+            row.style.opacity = '1';
+          });
+          showMessage('Error deleting servers. Please try again.', 'error');
+        }
       }
     }
 
