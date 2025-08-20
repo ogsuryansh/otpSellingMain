@@ -401,3 +401,96 @@ class UserDatabase:
         except Exception as e:
             logger.error(f"Error getting transactions for user {user_id}: {e}")
             return None
+
+    async def check_promocode(self, promocode: str) -> Dict[str, Any]:
+        """Check if promocode exists and is valid"""
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            # Use existing database connection but different collection
+            promocodes_collection = self.db['promocodes']
+            
+            logger.info(f"🔍 Checking promocode: {promocode.upper()}")
+            
+            # Find promocode
+            promocode_data = await promocodes_collection.find_one({
+                "code": promocode.upper(),
+                "is_active": True
+            })
+            
+            if not promocode_data:
+                logger.info(f"❌ Promocode not found: {promocode.upper()}")
+                return {"valid": False, "message": "Promocode not found or inactive"}
+            
+            # Check if promocode has reached max uses
+            current_uses = promocode_data.get("current_uses", 0)
+            max_uses = promocode_data.get("max_uses", 0)
+            
+            if current_uses >= max_uses:
+                logger.info(f"❌ Promocode usage limit reached: {promocode.upper()} ({current_uses}/{max_uses})")
+                return {"valid": False, "message": "Promocode usage limit reached"}
+            
+            logger.info(f"✅ Promocode valid: {promocode.upper()} - Amount: {promocode_data.get('amount', 0)}")
+            
+            return {
+                "valid": True,
+                "amount": promocode_data.get("amount", 0),
+                "max_uses": max_uses,
+                "current_uses": current_uses,
+                "promocode_id": str(promocode_data.get("_id"))
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error checking promocode: {e}")
+            return {"valid": False, "message": "Error checking promocode"}
+    
+    async def use_promocode(self, promocode: str, user_id: int) -> Dict[str, Any]:
+        """Use a promocode and add balance to user"""
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            logger.info(f"🎫 Using promocode: {promocode.upper()} for user: {user_id}")
+            
+            # First check if promocode is valid
+            check_result = await self.check_promocode(promocode)
+            if not check_result["valid"]:
+                logger.info(f"❌ Promocode validation failed: {check_result['message']}")
+                return check_result
+            
+            # Use existing database connection but different collection
+            promocodes_collection = self.db['promocodes']
+            
+            # Update promocode usage count
+            result = await promocodes_collection.update_one(
+                {"code": promocode.upper()},
+                {"$inc": {"current_uses": 1}}
+            )
+            
+            if result.modified_count == 0:
+                logger.error(f"❌ Failed to update promocode usage count: {promocode.upper()}")
+                return {"valid": False, "message": "Failed to update promocode usage"}
+            
+            logger.info(f"✅ Updated promocode usage count: {promocode.upper()}")
+            
+            # Add balance to user
+            amount = check_result["amount"]
+            success = await self.log_transaction(user_id, "credit", f"Promocode: {promocode.upper()}", amount)
+            
+            if success:
+                logger.info(f"✅ Successfully added {amount} 💎 to user {user_id} via promocode {promocode.upper()}")
+                return {
+                    "valid": True,
+                    "amount": amount,
+                    "message": f"Successfully added {amount} 💎 to your balance!"
+                }
+            else:
+                logger.error(f"❌ Failed to add balance for user {user_id} via promocode {promocode.upper()}")
+                return {"valid": False, "message": "Failed to add balance"}
+                
+        except Exception as e:
+            logger.error(f"❌ Error using promocode: {e}")
+            return {"valid": False, "message": "Error processing promocode"}

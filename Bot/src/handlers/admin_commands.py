@@ -394,7 +394,7 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if user_id:
                     await context.bot.send_message(
                         chat_id=user_id,
-                        text=f"📢 **BROADCAST MESSAGE**\n\n{message}"
+                        text=f"📢 <b>BROADCAST MESSAGE</b>\n\n{message}"
                     )
                     success_count += 1
             except Exception as e:
@@ -437,7 +437,7 @@ async def handle_delete_all_data(update: Update, context: ContextTypes.DEFAULT_T
             cleared_count = await user_db.clear_all_data()
             
             await update.message.reply_text(
-                f"🗑️ **DATA DELETION COMPLETED**\n\n"
+                f"🗑️ <b>DATA DELETION COMPLETED</b>\n\n"
                 f"✅ Successfully deleted {cleared_count} user records\n"
                 f"📊 Total users deleted: {user_count}\n\n"
                 f"⚠️ All user data has been permanently removed from the database."
@@ -445,9 +445,9 @@ async def handle_delete_all_data(update: Update, context: ContextTypes.DEFAULT_T
         else:
             # Ask for confirmation
             await update.message.reply_text(
-                "⚠️ **DANGER ZONE** ⚠️\n\n"
+                "⚠️ <b>DANGER ZONE</b> ⚠️\n\n"
                 "You are about to delete ALL user data from the database.\n"
-                "This action is **IRREVERSIBLE**!\n\n"
+                "This action is <b>IRREVERSIBLE</b>!\n\n"
                 "To confirm deletion, type:\n"
                 "`/delalldata confirm`\n\n"
                 "⚠️ This will delete all user records, balances, and history."

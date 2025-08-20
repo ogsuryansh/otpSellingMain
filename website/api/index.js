@@ -418,8 +418,11 @@ if (database) {
     
     try {
       const flags = await database.getFlags();
+      const promocodes = await database.getPromocodes(); // Get actual promocodes from database
+      
       res.render('promocode', { 
         flags,
+        promocodes,
         page: 'promocode'
       });
     } catch (error) {
@@ -1289,6 +1292,273 @@ if (database) {
   });
 }
 
+// Add CORS support for Vercel deployment
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// Delete endpoints
+app.delete('/delete-server/:id', async (req, res) => {
+  try {
+    console.log(`🗑️ [DEBUG] Deleting server with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const result = await database.deleteServer(id);
+    
+    if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted server with ID: ${id}`);
+      // Update dashboard stats after deleting server
+      await database.updateDashboardStats();
+      res.json({ status: 1, message: 'Server deleted successfully!' });
+    } else {
+      console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Server not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error deleting server:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting server' });
+  }
+});
+
+app.delete('/delete-all-servers', async (req, res) => {
+  try {
+    console.log('🗑️ [DEBUG] Bulk deleting all servers');
+    const result = await database.deleteAllServers();
+    
+    console.log(`✅ [DEBUG] Successfully deleted ${result.deletedCount} servers`);
+    // Update dashboard stats after deleting servers
+    await database.updateDashboardStats();
+    res.json({ 
+      status: 1, 
+      message: `Successfully deleted ${result.deletedCount} servers!`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error bulk deleting servers:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting servers' });
+  }
+});
+
+app.delete('/delete-service/:id', async (req, res) => {
+  try {
+    console.log(`🗑️ [DEBUG] Deleting service with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const result = await database.deleteService(id);
+    
+    if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted service with ID: ${id}`);
+      // Update dashboard stats after deleting service
+      await database.updateDashboardStats();
+      res.json({ status: 1, message: 'Service deleted successfully!' });
+    } else {
+      console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Service not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error deleting service:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting service' });
+  }
+});
+
+app.delete('/delete-api/:id', async (req, res) => {
+  try {
+    console.log(`🗑️ [DEBUG] Deleting API with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const result = await database.deleteApi(id);
+    
+    if (result.deletedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully deleted API with ID: ${id}`);
+      res.json({ status: 1, message: 'API deleted successfully!' });
+    } else {
+      console.log(`❌ [DEBUG] API not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'API not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error deleting API:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting API' });
+  }
+});
+
+app.delete('/delete-flag/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await database.deleteFlag(id);
+    
+    if (result.deletedCount > 0) {
+      res.json({ status: 1, message: 'Flag deleted successfully!' });
+    } else {
+      res.status(404).json({ status: 0, message: 'Flag not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting flag:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting flag' });
+  }
+});
+
+app.delete('/delete-promocode/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await database.deletePromocode(id);
+    
+    if (result.deletedCount > 0) {
+      res.json({ status: 1, message: 'Promocode deleted successfully!' });
+    } else {
+      res.status(404).json({ status: 0, message: 'Promocode not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting promocode:', error);
+    res.status(500).json({ status: 0, message: 'Error deleting promocode' });
+  }
+});
+
+// Update endpoints
+app.put('/update-flag/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { country, flag } = req.body;
+    
+    if (!country || !flag) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'Country and flag are required' 
+      });
+    }
+
+    const flagData = {
+      country,
+      flag
+    };
+
+    const result = await database.updateFlag(id, flagData);
+    
+    if (result.modifiedCount > 0) {
+      res.json({ 
+        status: 1, 
+        message: 'Flag updated successfully!',
+        data: result
+      });
+    } else {
+      res.status(404).json({ status: 0, message: 'Flag not found' });
+    }
+  } catch (error) {
+    console.error('Error updating flag:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error updating flag' 
+    });
+  }
+});
+
+// Additional POST endpoints for flags and promocodes
+app.post('/add-flag', async (req, res) => {
+  try {
+    const { country, flag } = req.body;
+    
+    if (!country || !flag) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'Country and flag are required' 
+      });
+    }
+
+    const flagData = {
+      country,
+      flag
+    };
+
+    const result = await database.addFlag(flagData);
+    
+    res.json({ 
+      status: 1, 
+      message: 'Flag added successfully!',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error adding flag:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error adding flag' 
+    });
+  }
+});
+
+app.post('/add-promocode', async (req, res) => {
+  try {
+    const { code, max_uses, amount } = req.body;
+    
+    if (!code || !max_uses || !amount) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'All fields are required' 
+      });
+    }
+
+    const promocodeData = {
+      code: code.toUpperCase(),
+      max_uses: parseInt(max_uses),
+      current_uses: 0,
+      amount: parseFloat(amount),
+      is_active: true
+    };
+
+    const result = await database.addPromocode(promocodeData);
+    
+    res.json({ 
+      status: 1, 
+      message: 'Promocode added successfully!',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error adding promocode:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error adding promocode' 
+    });
+  }
+});
+
+// Bot Stats API - Get real data from bot's MongoDB
+app.get('/api/bot-stats', async (req, res) => {
+  try {
+    console.log('🔍 [DEBUG] /api/bot-stats endpoint accessed');
+    
+    // Get bot statistics from database
+    const botStats = await database.getBotStats();
+    
+    console.log('✅ [DEBUG] Bot stats retrieved for API:', botStats);
+    
+    res.json({
+      success: true,
+      data: botStats,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Error in /api/bot-stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      data: {
+        totalUsers: 0,
+        todaysUsers: 0,
+        totalBalance: 0,
+        todaysTransactions: 0,
+        totalTransactions: 0,
+        todaysNumbersSold: 0,
+        totalNumbersSold: 0
+      }
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
@@ -1299,6 +1569,7 @@ app.use((req, res) => {
       '/',
       '/api/health',
       '/api/test',
+      '/api/bot-stats',
       '/admin-dashboard',
       '/dashboard',
       '/add-server',
@@ -1323,7 +1594,19 @@ app.use((req, res) => {
       '/transactions',
       '/promo-codes',
       '/api-config',
-      '/test-api'
+      '/test-api',
+      // DELETE routes
+      '/delete-server/:id',
+      '/delete-all-servers',
+      '/delete-service/:id',
+      '/delete-api/:id',
+      '/delete-flag/:id',
+      '/delete-promocode/:id',
+      // POST routes
+      '/add-flag',
+      '/add-promocode',
+      // PUT routes
+      '/update-flag/:id'
     ]
   });
 });

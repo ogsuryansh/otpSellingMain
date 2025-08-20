@@ -389,8 +389,8 @@ async def handle_transaction_page(update: Update, context: ContextTypes.DEFAULT_
             amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
             
             message += f"✉️ {reason}\n"
-            message += f"**{amount_text}**: {amount} 💰\n"
-            message += f"**Closing balance**: {closing_balance} 💎\n"
+            message += f"<b>{amount_text}</b>: {amount} 💰\n"
+            message += f"<b>Closing balance</b>: {closing_balance} 💎\n"
             message += f"📅 Created On: {date_str}\n\n"
         
         # Create pagination keyboard
@@ -471,8 +471,8 @@ async def handle_history_transaction_page(update: Update, context: ContextTypes.
             amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
             
             message += f"✉️ {reason}\n"
-            message += f"**{amount_text}**: {amount} 💰\n"
-            message += f"**Closing balance**: {closing_balance} 💎\n"
+            message += f"<b>{amount_text}</b>: {amount} 💰\n"
+            message += f"<b>Closing balance</b>: {closing_balance} 💎\n"
             message += f"📅 Created On: {date_str}\n\n"
         
         # Create pagination keyboard
@@ -519,15 +519,52 @@ async def handle_promocode_reply(update: Update, context: ContextTypes.DEFAULT_T
             text="⏳ Processing your promocode..."
         )
         
-        # Wait 1 second instead of 2 for faster response
+        # Wait 2 seconds as requested
         import asyncio
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         
-        # Send error message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="❌ Looks like this promocode does not exist."
-        )
+        # Check and use promocode from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        # Use the promocode
+        result = await user_db.use_promocode(promocode, user.id)
+        
+        if result["valid"]:
+            # Get updated user balance for success message
+            from src.database.user_db import UserDatabase
+            user_db = UserDatabase()
+            if not hasattr(user_db, 'client') or user_db.client is None:
+                await user_db.initialize()
+            
+            # Get user's current balance
+            user = await user_db.users_collection.find_one({"user_id": user.id})
+            current_balance = user.get("balance", 0.0) if user else 0.0
+            
+            # Exciting success message with party emojis
+            success_message = f"""🎉🎊🎉 HURAYYYYYYY! 🎉🎊🎉
+
+🎁 Your promocode <b>{promocode.upper()}</b> has been successfully applied!
+
+💰 Amount added to your account: <b>{result['amount']} 💎</b>
+
+💳 Your wallet balance is now: <b>{current_balance} 💎</b>
+
+✨ Enjoy your instant credit! ✨"""
+            
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=success_message,
+                parse_mode='HTML'
+            )
+        else:
+            # Error message
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ {result['message']}"
+            )
         
     except Exception as e:
         logger.error(f"❌ Error in promocode reply handler: {e}")
@@ -582,8 +619,8 @@ async def handle_transaction_history(update: Update, context: ContextTypes.DEFAU
                 amount_text = f"Amount credited" if tx_type == "credit" else f"Amount debited"
                 
                 message += f"✉️ {reason}\n"
-                message += f"**{amount_text}**: {amount} 💰\n"
-                message += f"**Closing balance**: {closing_balance} 💎\n"
+                message += f"<b>{amount_text}</b>: {amount} 💰\n"
+                message += f"<b>Closing balance</b>: {closing_balance} 💎\n"
                 message += f"📅 Created On: {date_str}\n\n"
             
             # Create pagination keyboard

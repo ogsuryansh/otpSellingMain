@@ -59,7 +59,7 @@ async def handle_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ],
             [InlineKeyboardButton("View My Services", web_app={"url": f"{backend_url}/my-services"})],
             [InlineKeyboardButton("QR Code", web_app={"url": f"{backend_url}/qr-code"})],
-            [InlineKeyboardButton("Add Promocode", callback_data="admin_add_promocode")],
+            [InlineKeyboardButton("Add Promocode", web_app={"url": f"{backend_url}/promocode"})],
             [InlineKeyboardButton("View Manual Payments", callback_data="admin_manual_payments")]
         ]
         
