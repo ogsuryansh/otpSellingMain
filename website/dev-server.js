@@ -31,4 +31,4 @@ console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
 console.log(`🤖 Telegram Bot: ${config.telegram.useWebhook ? 'Webhook Mode' : 'Polling Mode'}`);
 
 // Start the main server
-require('./server.js');
+require('./simple-server.js');
