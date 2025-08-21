@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include("./partials/head") %>
+  <title>Edit Service - OTP Bot</title>
+</head>
+<body class="bg-gray-50">
+  <%- include("./partials/alert") %>
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-gray-900">Edit Service</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/my-services" class="text-blue-600 hover:text-blue-800 font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to My Services
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Service Information</h2>
+        <p class="text-gray-600">Update the service details below</p>
+      </div>
+
+      <form id="editServiceForm" class="space-y-6">
+        <input type="hidden" id="serviceId" value="<%= service._id %>">
+        
+        <!-- Server Selection -->
+        <div>
+          <label for="server_id" class="block text-sm font-medium text-gray-700 mb-2">
+            Server <span class="text-red-500">*</span>
+          </label>
+          <select 
+            id="server_id" 
+            name="server_id" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="">Select a server</option>
+            <% servers.forEach(server => { %>
+              <option value="<%= server._id %>" <%= service.server_id === server._id.toString() ? 'selected' : '' %>>
+                <%= server.server_name %> (<%= server.country %>)
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Service ID -->
+        <div>
+          <label for="service_id" class="block text-sm font-medium text-gray-700 mb-2">
+            Service ID <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="service_id" 
+            name="service_id" 
+            value="<%= service.service_id %>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter service ID"
+            required
+          >
+        </div>
+
+        <!-- Service Name -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+            Service Name <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            value="<%= service.name %>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter service name"
+            required
+          >
+        </div>
+
+        <!-- Service Code -->
+        <div>
+          <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
+            Service Code <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="code" 
+            name="code" 
+            value="<%= service.code %>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter service code"
+            required
+          >
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+            Description
+          </label>
+          <textarea 
+            id="description" 
+            name="description" 
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter service description"
+          ><%= service.description || '' %></textarea>
+        </div>
+
+        <!-- Price -->
+        <div>
+          <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
+            Price (₹) <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="price" 
+            name="price" 
+            value="<%= service.price ? service.price.replace('₹', '') : '' %>"
+            step="0.01"
+            min="0"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter price"
+            required
+          >
+        </div>
+
+        <!-- Cancel/Disable Time -->
+        <div>
+          <label for="cancel_disable" class="block text-sm font-medium text-gray-700 mb-2">
+            Cancel/Disable Time (minutes)
+          </label>
+          <input 
+            type="number" 
+            id="cancel_disable" 
+            name="cancel_disable" 
+            value="<%= service.cancel_disable || '5' %>"
+            min="1"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter cancel/disable time in minutes"
+          >
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end space-x-4">
+          <a 
+            href="/my-services" 
+            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </a>
+          <button 
+            type="submit"
+            id="submit-btn"
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center"
+          >
+            <i class="fas fa-save mr-2"></i>
+            Update Service
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="mt-6"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="text-center text-gray-600">
+        <p>&copy; 2024 OTP Bot. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Form JavaScript -->
+  <script>
+    document.getElementById('editServiceForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-btn');
+      const originalText = submitBtn.innerHTML;
+      const serviceId = document.getElementById('serviceId').value;
+      
+      // Get form data
+      const formData = new FormData(this);
+      const serviceData = {
+        server_id: formData.get('server_id'),
+        service_id: formData.get('service_id'),
+        name: formData.get('name'),
+        code: formData.get('code'),
+        description: formData.get('description'),
+        price: formData.get('price'),
+        cancel_disable: formData.get('cancel_disable')
+      };
+      
+      // Validate required fields
+      if (!serviceData.server_id || !serviceData.service_id || !serviceData.name || !serviceData.code || !serviceData.price) {
+        showMessage('Required fields are missing!', 'error');
+        return;
+      }
+      
+      // Show loading state
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+      submitBtn.disabled = true;
+      
+      try {
+        // Get backend URL
+        function getBackendUrl() {
+          if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            return window.location.origin;
+          } else {
+            return 'http://localhost:3001';
+          }
+        }
+
+        const backendUrl = getBackendUrl();
+        console.log(`🔗 [DEBUG] Using backend URL: ${backendUrl}`);
+        
+        const response = await fetch(`${backendUrl}/update-service/${serviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(serviceData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          showMessage('Service updated successfully!', 'success');
+          setTimeout(() => {
+            window.location.href = '/my-services';
+          }, 1500);
+        } else {
+          showMessage(result.message || 'Error updating service', 'error');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error updating service. Please try again.', 'error');
+      } finally {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    function showMessage(message, type) {
+      const container = document.getElementById('messageContainer');
+      const alertClass = type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+      
+      container.innerHTML = `
+        <div class="border rounded-md p-4 ${alertClass}">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium">${message}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        container.innerHTML = '';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

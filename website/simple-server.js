@@ -532,6 +532,320 @@ app.delete('/delete-api/:id', async (req, res) => {
   }
 });
 
+// Update endpoints for editing
+app.put('/update-server/:id', async (req, res) => {
+  try {
+    console.log(`✏️ [DEBUG] Updating server with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const { name, code, flag } = req.body;
+    
+    if (!name || !code || !flag) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'All fields are required' 
+      });
+    }
+
+    const serverData = {
+      server_name: name,
+      country: code,
+      flag: flag
+    };
+
+    console.log('💾 [DEBUG] Server data to update:', serverData);
+    const result = await database.updateServer(id, serverData);
+    
+    if (result.modifiedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully updated server with ID: ${id}`);
+      // Update dashboard stats after updating server
+      await database.updateDashboardStats();
+      res.json({ 
+        status: 1, 
+        message: 'Server updated successfully!',
+        data: result
+      });
+    } else {
+      console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Server not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error updating server:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error updating server' 
+    });
+  }
+});
+
+app.put('/update-service/:id', async (req, res) => {
+  try {
+    console.log(`✏️ [DEBUG] Updating service with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const { server_id, service_id, name, code, description, price, cancel_disable } = req.body;
+    
+    if (!server_id || !service_id || !name || !code || !price) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'Required fields are missing' 
+      });
+    }
+
+    // Get server name
+    const servers = await database.getServers();
+    const server = servers.find(s => s._id.toString() === server_id);
+    
+    const serviceData = {
+      server_id,
+      server_name: server ? server.server_name : process.env.DEFAULT_SERVER_NAME || 'Unknown Server',
+      service_id,
+      name,
+      code,
+      description: description || process.env.DEFAULT_SERVICE_DESCRIPTION || '',
+      price: `₹${price}`,
+      cancel_disable: cancel_disable || process.env.DEFAULT_CANCEL_DISABLE || '5'
+    };
+
+    console.log('💾 [DEBUG] Service data to update:', serviceData);
+    const result = await database.updateService(id, serviceData);
+    
+    if (result.modifiedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully updated service with ID: ${id}`);
+      // Update dashboard stats after updating service
+      await database.updateDashboardStats();
+      res.json({ 
+        status: 1, 
+        message: 'Service updated successfully!',
+        data: result
+      });
+    } else {
+      console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Service not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error updating service:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error updating service' 
+    });
+  }
+});
+
+app.put('/update-api/:id', async (req, res) => {
+  try {
+    console.log(`✏️ [DEBUG] Updating API with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const { server_id, api_url, api_key, api_type, status } = req.body;
+    
+    if (!server_id || !api_url || !api_key) {
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'Required fields are missing' 
+      });
+    }
+
+    // Get server name
+    const servers = await database.getServers();
+    const server = servers.find(s => s._id.toString() === server_id);
+    
+    const apiData = {
+      server_id,
+      server_name: server ? server.server_name : process.env.DEFAULT_SERVER_NAME || 'Unknown Server',
+      api_url,
+      api_key,
+      api_type: api_type || process.env.DEFAULT_API_TYPE || 'GET',
+      status: status === 'true'
+    };
+
+    console.log('💾 [DEBUG] API data to update:', apiData);
+    const result = await database.updateApi(id, apiData);
+    
+    if (result.modifiedCount > 0) {
+      console.log(`✅ [DEBUG] Successfully updated API with ID: ${id}`);
+      res.json({ 
+        status: 1, 
+        message: 'API updated successfully!',
+        data: result
+      });
+    } else {
+      console.log(`❌ [DEBUG] API not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'API not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error updating API:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error updating API' 
+    });
+  }
+});
+
+// Edit page routes
+app.get('/edit-server/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Edit server page for ID: ${req.params.id}`);
+    const { id } = req.params;
+    const server = await database.getServerById(id);
+    
+    if (server) {
+      console.log(`✅ [DEBUG] Found server: ${server.server_name}`);
+      const flags = await database.getFlags();
+      res.render('edit-server', { 
+        server,
+        flags,
+        page: 'edit-server'
+      });
+    } else {
+      console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
+      res.status(404).render('not-found', { 
+        message: 'Server not found',
+        page: 'not-found'
+      });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error loading edit server page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading server',
+      page: 'error'
+    });
+  }
+});
+
+app.get('/edit-service/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Edit service page for ID: ${req.params.id}`);
+    const { id } = req.params;
+    const service = await database.getServiceById(id);
+    
+    if (service) {
+      console.log(`✅ [DEBUG] Found service: ${service.name}`);
+      const servers = await database.getServers();
+      res.render('edit-service', { 
+        service,
+        servers,
+        page: 'edit-service'
+      });
+    } else {
+      console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
+      res.status(404).render('not-found', { 
+        message: 'Service not found',
+        page: 'not-found'
+      });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error loading edit service page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading service',
+      page: 'error'
+    });
+  }
+});
+
+app.get('/edit-api/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Edit API page for ID: ${req.params.id}`);
+    const { id } = req.params;
+    const api = await database.getApiById(id);
+    
+    if (api) {
+      console.log(`✅ [DEBUG] Found API: ${api.server_name}`);
+      const servers = await database.getServers();
+      res.render('edit-api', { 
+        api,
+        servers,
+        page: 'edit-api'
+      });
+    } else {
+      console.log(`❌ [DEBUG] API not found with ID: ${id}`);
+      res.status(404).render('not-found', { 
+        message: 'API not found',
+        page: 'not-found'
+      });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error loading edit API page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading API',
+      page: 'error'
+    });
+  }
+});
+
+// Get single item endpoints for editing
+app.get('/get-server/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Getting server with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const server = await database.getServerById(id);
+    
+    if (server) {
+      console.log(`✅ [DEBUG] Found server: ${server.server_name}`);
+      res.json({ 
+        status: 1, 
+        data: server
+      });
+    } else {
+      console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Server not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error getting server:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error getting server' 
+    });
+  }
+});
+
+app.get('/get-service/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Getting service with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const service = await database.getServiceById(id);
+    
+    if (service) {
+      console.log(`✅ [DEBUG] Found service: ${service.name}`);
+      res.json({ 
+        status: 1, 
+        data: service
+      });
+    } else {
+      console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'Service not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error getting service:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error getting service' 
+    });
+  }
+});
+
+app.get('/get-api/:id', async (req, res) => {
+  try {
+    console.log(`🔍 [DEBUG] Getting API with ID: ${req.params.id}`);
+    const { id } = req.params;
+    const api = await database.getApiById(id);
+    
+    if (api) {
+      console.log(`✅ [DEBUG] Found API: ${api.server_name}`);
+      res.json({ 
+        status: 1, 
+        data: api
+      });
+    } else {
+      console.log(`❌ [DEBUG] API not found with ID: ${id}`);
+      res.status(404).json({ status: 0, message: 'API not found' });
+    }
+  } catch (error) {
+    console.error('❌ [DEBUG] Error getting API:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error getting API' 
+    });
+  }
+});
+
 // Flag management endpoints
 app.post('/add-flag', async (req, res) => {
   try {

@@ -1,6 +1,48 @@
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
+// Input validation utilities
+const validateInput = {
+  // Validate and sanitize string inputs
+  string: (value, maxLength = 100) => {
+    if (typeof value !== 'string') return null;
+    if (value.length > maxLength) return null;
+    // Remove potentially dangerous characters
+    return value.replace(/[<>"'&]/g, '');
+  },
+  
+  // Validate numeric inputs
+  number: (value) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+  },
+  
+  // Validate ObjectId
+  objectId: (value) => {
+    if (!value || typeof value !== 'string') return null;
+    if (!/^[0-9a-fA-F]{24}$/.test(value)) return null;
+    return value;
+  },
+  
+  // Validate email
+  email: (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(value) ? value : null;
+  },
+  
+  // Validate URL
+  url: (value) => {
+    if (!value || typeof value !== 'string') return null;
+    try {
+      new URL(value);
+      return value;
+    } catch {
+      return null;
+    }
+  }
+};
+
 class Database {
   constructor() {
     this.client = null;
@@ -33,6 +75,12 @@ class Database {
     if (!this.db) {
       throw new Error('Database not connected. Call connect() first.');
     }
+    
+    // Validate collection name
+    if (!validateInput.string(collectionName, 50)) {
+      throw new Error('Invalid collection name');
+    }
+    
     console.log(`📋 [DEBUG] Getting collection: ${collectionName} from database: ${this.dbName}`);
     return this.db.collection(collectionName);
   }
@@ -116,7 +164,7 @@ class Database {
       console.log('🔍 [DEBUG] Connecting to bot MongoDB...');
       
       // Use the same MongoDB connection as the bot
-      const botUri = process.env.MONGODB_URI || 'mongodb+srv://vishalgiri0044:kR9oUspxQUtYdund@cluster0.zdudgbg.mongodb.net/otp_bot?retryWrites=true&w=majority&appName=Cluster0';
+      const botUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/otp_bot';
       const botDbName = process.env.MONGODB_DATABASE || 'otp_bot';
       const botCollection = process.env.MONGODB_COLLECTION || 'users';
       
@@ -258,9 +306,23 @@ class Database {
 
   async addServer(serverData) {
     try {
+      // Validate and sanitize server data
+      const validatedData = {
+        name: validateInput.string(serverData.name, 100),
+        url: validateInput.url(serverData.url),
+        api_key: validateInput.string(serverData.api_key, 200),
+        status: validateInput.string(serverData.status, 20) || 'active',
+        description: validateInput.string(serverData.description, 500)
+      };
+      
+      // Check if required fields are valid
+      if (!validatedData.name || !validatedData.url) {
+        throw new Error('Invalid server data: name and url are required');
+      }
+      
       const serversCollection = this.getCollection('servers');
       const result = await serversCollection.insertOne({
-        ...serverData,
+        ...validatedData,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -274,8 +336,13 @@ class Database {
   async updateServer(id, serverData) {
     try {
       const serversCollection = this.getCollection('servers');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
       const result = await serversCollection.updateOne(
-        { _id: id },
+        { _id: objectId },
         { 
           $set: {
             ...serverData,
@@ -290,14 +357,37 @@ class Database {
     }
   }
 
-  async deleteServer(id) {
+  async getServerById(id) {
     try {
-      console.log(`🗑️ [DEBUG] Deleting server with ID: ${id}`);
       const serversCollection = this.getCollection('servers');
       
       // Convert string id to ObjectId
       const { ObjectId } = require('mongodb');
       const objectId = new ObjectId(id);
+      
+      const server = await serversCollection.findOne({ _id: objectId });
+      return server;
+    } catch (error) {
+      console.error('Error getting server by ID:', error);
+      throw error;
+    }
+  }
+
+  async deleteServer(id) {
+    try {
+      console.log(`🗑️ [DEBUG] Deleting server with ID: ${id}`);
+      
+      // Validate ObjectId
+      const validatedId = validateInput.objectId(id);
+      if (!validatedId) {
+        throw new Error('Invalid server ID format');
+      }
+      
+      const serversCollection = this.getCollection('servers');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(validatedId);
       
       console.log(`🔍 [DEBUG] Searching for server with ObjectId: ${objectId}`);
       const result = await serversCollection.deleteOne({ _id: objectId });
@@ -351,8 +441,13 @@ class Database {
   async updateService(id, serviceData) {
     try {
       const servicesCollection = this.getCollection('services');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
       const result = await servicesCollection.updateOne(
-        { _id: id },
+        { _id: objectId },
         { 
           $set: {
             ...serviceData,
@@ -363,6 +458,22 @@ class Database {
       return result;
     } catch (error) {
       console.error('Error updating service:', error);
+      throw error;
+    }
+  }
+
+  async getServiceById(id) {
+    try {
+      const servicesCollection = this.getCollection('services');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      const service = await servicesCollection.findOne({ _id: objectId });
+      return service;
+    } catch (error) {
+      console.error('Error getting service by ID:', error);
       throw error;
     }
   }
@@ -415,10 +526,25 @@ class Database {
   async addApi(apiData) {
     try {
       console.log('💾 [DEBUG] addApi called with data:', apiData);
+      
+      // Validate and sanitize API data
+      const validatedData = {
+        server_name: validateInput.string(apiData.server_name, 100),
+        api_url: validateInput.url(apiData.api_url),
+        api_key: validateInput.string(apiData.api_key, 200),
+        status: validateInput.string(apiData.status, 20) || 'active',
+        description: validateInput.string(apiData.description, 500)
+      };
+      
+      // Check if required fields are valid
+      if (!validatedData.server_name || !validatedData.api_url) {
+        throw new Error('Invalid API data: server_name and api_url are required');
+      }
+      
       const apisCollection = this.getCollection('apis');
       
       const apiToInsert = {
-        ...apiData,
+        ...validatedData,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -448,8 +574,13 @@ class Database {
   async updateApi(id, apiData) {
     try {
       const apisCollection = this.getCollection('apis');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
       const result = await apisCollection.updateOne(
-        { _id: id },
+        { _id: objectId },
         { 
           $set: {
             ...apiData,
@@ -460,6 +591,22 @@ class Database {
       return result;
     } catch (error) {
       console.error('Error updating API:', error);
+      throw error;
+    }
+  }
+
+  async getApiById(id) {
+    try {
+      const apisCollection = this.getCollection('apis');
+      
+      // Convert string id to ObjectId
+      const { ObjectId } = require('mongodb');
+      const objectId = new ObjectId(id);
+      
+      const api = await apisCollection.findOne({ _id: objectId });
+      return api;
+    } catch (error) {
+      console.error('Error getting API by ID:', error);
       throw error;
     }
   }
