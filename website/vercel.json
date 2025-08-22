@@ -174,6 +174,30 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/edit-service/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/edit-server/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/edit-api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/update-service/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/update-server/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/update-api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/auto-import/(.*)",
       "dest": "/api/index.js"
     },

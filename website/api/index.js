@@ -88,6 +88,8 @@ app.get('/', async (req, res) => {
 
 // Try to load database and add routes
 let database = null;
+let dbInitialized = false;
+
 try {
   database = require('../config/database');
   console.log('✅ Database module loaded successfully');
@@ -98,7 +100,6 @@ try {
 // Add database-dependent routes only if database is available
 if (database) {
   // Initialize database connection
-  let dbInitialized = false;
 
   // Middleware to ensure database is connected
   app.use(async (req, res, next) => {
@@ -542,6 +543,130 @@ if (database) {
     }
   });
 
+  // Edit routes
+  app.get('/edit-service/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const flags = await database.getFlags();
+      let servers = [];
+      
+      try {
+        servers = await database.getServers();
+      } catch (serverError) {
+        console.error('Error fetching servers:', serverError);
+        servers = [];
+      }
+      
+      // Get the service data by ID
+      const myService = await database.getServiceById(id);
+      
+      if (!myService) {
+        return res.status(404).json({ 
+          error: 'Service not found',
+          message: 'The requested service could not be found'
+        });
+      }
+      
+      res.render('edit-service', { 
+        flags,
+        servers,
+        myService,
+        page: 'edit-service'
+      });
+    } catch (error) {
+      console.error('Error loading edit-service page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/edit-server/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const flags = await database.getFlags();
+      
+      // Get the server data by ID
+      const myServer = await database.getServerById(id);
+      
+      if (!myServer) {
+        return res.status(404).json({ 
+          error: 'Server not found',
+          message: 'The requested server could not be found'
+        });
+      }
+      
+      res.render('edit-server', { 
+        flags,
+        myServer,
+        page: 'edit-server'
+      });
+    } catch (error) {
+      console.error('Error loading edit-server page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
+  app.get('/edit-api/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const flags = await database.getFlags();
+      let servers = [];
+      
+      try {
+        servers = await database.getServers();
+      } catch (serverError) {
+        console.error('Error fetching servers:', serverError);
+        servers = [];
+      }
+      
+      // Get the API data by ID
+      const myApi = await database.getApiById(id);
+      
+      if (!myApi) {
+        return res.status(404).json({ 
+          error: 'API not found',
+          message: 'The requested API could not be found'
+        });
+      }
+      
+      res.render('edit-api', { 
+        flags,
+        servers,
+        myApi,
+        page: 'edit-api'
+      });
+    } catch (error) {
+      console.error('Error loading edit-api page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
   app.get('/services', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
@@ -933,6 +1058,91 @@ if (database) {
     }
   });
 
+  // Update routes for editing
+  app.post('/update-service/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        status: 0,
+        message: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const serviceData = req.body;
+      const result = await database.updateService(id, serviceData);
+      
+      res.json({
+        status: 1,
+        message: 'Service updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating service:', error);
+      res.status(500).json({ 
+        status: 0,
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/update-server/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        status: 0,
+        message: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const serverData = req.body;
+      const result = await database.updateServer(id, serverData);
+      
+      res.json({
+        status: 1,
+        message: 'Server updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating server:', error);
+      res.status(500).json({ 
+        status: 0,
+        message: error.message
+      });
+    }
+  });
+
+  app.post('/update-api/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        status: 0,
+        message: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const { id } = req.params;
+      const apiData = req.body;
+      const result = await database.updateApi(id, apiData);
+      
+      res.json({
+        status: 1,
+        message: 'API updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating API:', error);
+      res.status(500).json({ 
+        status: 0,
+        message: error.message
+      });
+    }
+  });
+
   // API endpoints to show actual data
   app.get('/api/dashboard-data', async (req, res) => {
     if (!dbInitialized) {
@@ -1239,6 +1449,54 @@ if (database) {
   });
 
   app.get('/manage-flags', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/edit-service/:id', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/edit-server/:id', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get('/edit-api/:id', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.post('/update-service/:id', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.post('/update-server/:id', (req, res) => {
+    res.json({ 
+      error: 'Database not available',
+      message: 'Database module could not be loaded',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.post('/update-api/:id', (req, res) => {
     res.json({ 
       error: 'Database not available',
       message: 'Database module could not be loaded',
@@ -1614,6 +1872,10 @@ app.use((req, res) => {
       '/promo-codes',
       '/api-config',
       '/test-api',
+      // EDIT routes
+      '/edit-service/:id',
+      '/edit-server/:id',
+      '/edit-api/:id',
       // DELETE routes
       '/delete-server/:id',
       '/delete-all-servers',
@@ -1624,6 +1886,9 @@ app.use((req, res) => {
       // POST routes
       '/add-flag',
       '/add-promocode',
+      '/update-service/:id',
+      '/update-server/:id',
+      '/update-api/:id',
       // PUT routes
       '/update-flag/:id'
     ]
