@@ -576,7 +576,7 @@ if (database) {
       res.render('edit-service', { 
         flags,
         servers,
-        myService,
+        service: myService,
         page: 'edit-service'
       });
     } catch (error) {
@@ -611,7 +611,7 @@ if (database) {
       
       res.render('edit-server', { 
         flags,
-        myServer,
+        server: myServer,
         page: 'edit-server'
       });
     } catch (error) {
@@ -655,7 +655,7 @@ if (database) {
       res.render('edit-api', { 
         flags,
         servers,
-        myApi,
+        api: myApi,
         page: 'edit-api'
       });
     } catch (error) {
