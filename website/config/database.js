@@ -529,16 +529,22 @@ class Database {
       
       // Validate and sanitize API data
       const validatedData = {
-        server_name: validateInput.string(apiData.server_name, 100),
-        api_url: validateInput.url(apiData.api_url),
-        api_key: validateInput.string(apiData.api_key, 200),
-        status: validateInput.string(apiData.status, 20) || 'active',
-        description: validateInput.string(apiData.description, 500)
+        server_id: validateInput.objectId(apiData.server_id),
+        api_name: validateInput.string(apiData.api_name, 100),
+        use_auth_headers: typeof apiData.use_auth_headers === 'boolean' ? apiData.use_auth_headers : false,
+        api_response_type: validateInput.string(apiData.api_response_type, 20),
+        get_number_url: validateInput.url(apiData.get_number_url),
+        get_message_url: validateInput.url(apiData.get_message_url),
+        cancel_number_url: validateInput.url(apiData.cancel_number_url),
+        auto_cancel_minutes: validateInput.number(apiData.auto_cancel_minutes) || 5,
+        retry_times: validateInput.number(apiData.retry_times) || 0,
+        status: typeof apiData.status === 'boolean' ? apiData.status : true
       };
       
       // Check if required fields are valid
-      if (!validatedData.server_name || !validatedData.api_url) {
-        throw new Error('Invalid API data: server_name and api_url are required');
+      if (!validatedData.server_id || !validatedData.api_name || !validatedData.api_response_type || 
+          !validatedData.get_number_url || !validatedData.get_message_url || !validatedData.cancel_number_url) {
+        throw new Error('Invalid API data: server_id, api_name, api_response_type, get_number_url, get_message_url, and cancel_number_url are required');
       }
       
       const apisCollection = this.getCollection('apis');
@@ -561,7 +567,7 @@ class Database {
       const allApis = await apisCollection.find({}).toArray();
       console.log('📊 [DEBUG] Total APIs in collection after insert:', allApis.length);
       allApis.forEach((api, index) => {
-        console.log(`   ${index + 1}. ${api.server_name} - ${api.api_url} - ID: ${api._id}`);
+        console.log(`   ${index + 1}. ${api.api_name} - ${api.get_number_url} - ID: ${api._id}`);
       });
       
       return result;
@@ -579,11 +585,25 @@ class Database {
       const { ObjectId } = require('mongodb');
       const objectId = new ObjectId(id);
       
+      // Validate and sanitize API data for update
+      const validatedData = {
+        server_id: validateInput.objectId(apiData.server_id),
+        api_name: validateInput.string(apiData.api_name, 100),
+        use_auth_headers: typeof apiData.use_auth_headers === 'boolean' ? apiData.use_auth_headers : false,
+        api_response_type: validateInput.string(apiData.api_response_type, 20),
+        get_number_url: validateInput.url(apiData.get_number_url),
+        get_message_url: validateInput.url(apiData.get_message_url),
+        cancel_number_url: validateInput.url(apiData.cancel_number_url),
+        auto_cancel_minutes: validateInput.number(apiData.auto_cancel_minutes) || 5,
+        retry_times: validateInput.number(apiData.retry_times) || 0,
+        status: typeof apiData.status === 'boolean' ? apiData.status : true
+      };
+      
       const result = await apisCollection.updateOne(
         { _id: objectId },
         { 
           $set: {
-            ...apiData,
+            ...validatedData,
             updatedAt: new Date()
           }
         }
@@ -627,6 +647,16 @@ class Database {
       return result;
     } catch (error) {
       console.error('❌ [DEBUG] Error deleting API:', error);
+      throw error;
+    }
+  }
+
+  async getApis() {
+    try {
+      const apisCollection = this.getCollection('apis');
+      return await apisCollection.find({}).toArray();
+    } catch (error) {
+      console.error('Error getting APIs:', error);
       throw error;
     }
   }

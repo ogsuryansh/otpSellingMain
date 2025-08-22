@@ -288,6 +288,41 @@ if (database) {
     }
   });
 
+  app.get('/edit-api/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        error: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const apiId = req.params.id;
+      const api = await database.getApiById(apiId);
+      const servers = await database.getServers();
+      const flags = await database.getFlags();
+      
+      if (!api) {
+        return res.status(404).render('not-found', { 
+          flags,
+          page: 'not-found'
+        });
+      }
+      
+      res.render('edit-api', { 
+        api,
+        servers,
+        flags,
+        page: 'edit-api'
+      });
+    } catch (error) {
+      console.error('Error loading edit-api page:', error);
+      res.status(500).json({ 
+        error: 'Error loading page',
+        message: error.message
+      });
+    }
+  });
+
   app.get('/my-services', async (req, res) => {
     if (!dbInitialized) {
       return res.status(500).json({ 
@@ -898,6 +933,61 @@ if (database) {
       });
     } catch (error) {
       console.error('Error connecting API:', error);
+      res.status(500).json({ 
+        status: 0,
+        message: error.message
+      });
+    }
+  });
+
+  app.put('/update-api/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        status: 0,
+        message: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const apiId = req.params.id;
+      const apiData = req.body;
+      const result = await database.updateApi(apiId, apiData);
+      
+      res.json({
+        status: 1,
+        message: 'API updated successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating API:', error);
+      res.status(500).json({ 
+        status: 0,
+        message: error.message
+      });
+    }
+  });
+
+  app.delete('/delete-api/:id', async (req, res) => {
+    if (!dbInitialized) {
+      return res.status(500).json({ 
+        status: 0,
+        message: 'Database connection not available' 
+      });
+    }
+    
+    try {
+      const apiId = req.params.id;
+      const result = await database.deleteApi(apiId);
+      
+      res.json({
+        status: 1,
+        message: 'API deleted successfully',
+        data: result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error deleting API:', error);
       res.status(500).json({ 
         status: 0,
         message: error.message

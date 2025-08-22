@@ -103,8 +103,11 @@ app.get('/add-service', async (req, res) => {
 
 app.get('/connect-api', async (req, res) => {
   try {
+    const servers = await database.getServers();
     const flags = await database.getFlags();
     res.render('connect-api', { 
+      servers,
+      myApi: null,
       flags,
       page: 'connect-api'
     });
@@ -113,6 +116,35 @@ app.get('/connect-api', async (req, res) => {
     res.status(500).render('error', { 
       message: 'Error loading page',
       page: 'connect-api'
+    });
+  }
+});
+
+app.get('/edit-api/:id', async (req, res) => {
+  try {
+    const apiId = req.params.id;
+    const api = await database.getApiById(apiId);
+    const servers = await database.getServers();
+    const flags = await database.getFlags();
+    
+    if (!api) {
+      return res.status(404).render('not-found', { 
+        flags,
+        page: 'not-found'
+      });
+    }
+    
+    res.render('edit-api', { 
+      api,
+      servers,
+      flags,
+      page: 'edit-api'
+    });
+  } catch (error) {
+    console.error('Error loading edit-api page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading page',
+      page: 'edit-api'
     });
   }
 });
@@ -242,6 +274,67 @@ app.post('/api/update-flags', async (req, res) => {
   } catch (error) {
     console.error('Error updating flags:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API endpoints for CRUD operations
+app.post('/connect-api', async (req, res) => {
+  try {
+    const apiData = req.body;
+    const result = await database.addApi(apiData);
+    res.json({
+      status: 1,
+      message: 'API connected successfully',
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error connecting API:', error);
+    res.status(500).json({ 
+      status: 0,
+      message: error.message
+    });
+  }
+});
+
+app.put('/update-api/:id', async (req, res) => {
+  try {
+    const apiId = req.params.id;
+    const apiData = req.body;
+    const result = await database.updateApi(apiId, apiData);
+    
+    res.json({
+      status: 1,
+      message: 'API updated successfully',
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error updating API:', error);
+    res.status(500).json({ 
+      status: 0,
+      message: error.message
+    });
+  }
+});
+
+app.delete('/delete-api/:id', async (req, res) => {
+  try {
+    const apiId = req.params.id;
+    const result = await database.deleteApi(apiId);
+    
+    res.json({
+      status: 1,
+      message: 'API deleted successfully',
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error deleting API:', error);
+    res.status(500).json({ 
+      status: 0,
+      message: error.message
+    });
   }
 });
 

@@ -19,6 +19,53 @@
     .bg-white {
       overflow: visible;
     }
+    /* Custom scrollbar for service info box */
+    .service-info-box {
+      max-height: 200px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e0 #f7fafc;
+    }
+    .service-info-box::-webkit-scrollbar {
+      width: 6px;
+    }
+    .service-info-box::-webkit-scrollbar-track {
+      background: #f7fafc;
+      border-radius: 3px;
+    }
+    .service-info-box::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 3px;
+    }
+    .service-info-box::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
+    }
+    /* Form section styling */
+    .form-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .form-section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+    }
+    .form-section-title i {
+      margin-right: 8px;
+      color: #4299e1;
+    }
+    /* Required field indicator */
+    .required-field::after {
+      content: " *";
+      color: #e53e3e;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -30,101 +77,226 @@
     <!-- Page Header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Connect API</h1>
-      <p class="text-gray-600">Connect your services with external API providers</p>
+      <p class="text-gray-600">Configure your API connection with detailed settings</p>
     </div>
 
     <!-- Form Card -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <form id="connectApiForm" class="space-y-6">
-        <!-- Select Server -->
-        <div>
-          <label for="server" class="block text-sm font-medium text-gray-700 mb-2">
-            Select Server <span class="text-red-500">*</span>
-          </label>
-          <select 
-            id="server" 
-            name="server" 
-            required
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            style="max-height: 200px; overflow-y: auto;"
-          >
-            <option value="">Choose a server</option>
-            <% if (servers && servers.length > 0) { %>
-              <% servers.forEach(function (obj, i){ %>
-                <% var isSelected = (obj._id || obj.id) == myApi?.server_id ? "selected" : "" %>
-                <% var serverName = obj.server_name || obj.name || 'Server ' + (i + 1) %>
-                <option value="<%= obj._id || obj.id %>" <%= isSelected %> title="<%= serverName %>"><%= serverName.length > 50 ? serverName.substring(0, 50) + '...' : serverName %></option>
-              <% }) %>
-            <% } else { %>
-              <option value="" disabled>No servers available. Please add servers first.</option>
-            <% } %>
-          </select>
-        </div>
-
-        <!-- API URL -->
-        <div>
-          <label for="api_url" class="block text-sm font-medium text-gray-700 mb-2">
-            API URL <span class="text-red-500">*</span>
-          </label>
-          <input 
-            type="url" 
-            id="api_url" 
-            name="api_url" 
-            required
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            placeholder="https://api.example.com"
-            value="<%= myApi?.api_url %>"
-          >
-          <p class="mt-1 text-sm text-gray-500">Enter the base URL of your API provider</p>
-        </div>
-
-        <!-- API Key -->
-        <div>
-          <label for="api_key" class="block text-sm font-medium text-gray-700 mb-2">
-            API Key <span class="text-red-500">*</span>
-          </label>
-          <input 
-            type="password" 
-            id="api_key" 
-            name="api_key" 
-            required
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            placeholder="Enter your API key"
-            value="<%= myApi?.api_key %>"
-          >
-        </div>
-
-        <!-- API Type -->
-        <div>
-          <label for="api_type" class="block text-sm font-medium text-gray-700 mb-2">
-            API Type <span class="text-red-500">*</span>
-          </label>
-          <select 
-            id="api_type" 
-            name="api_type" 
-            required
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="">Select API type</option>
-            <option value="5sim" <%= myApi?.api_type == '5sim' ? 'selected' : '' %>>5sim</option>
-            <option value="sms-activate" <%= myApi?.api_type == 'sms-activate' ? 'selected' : '' %>>SMS Activate</option>
-            <option value="smspool" <%= myApi?.api_type == 'smspool' ? 'selected' : '' %>>SMSPool</option>
-            <option value="custom" <%= myApi?.api_type == 'custom' ? 'selected' : '' %>>Custom API</option>
-          </select>
-        </div>
-
-        <!-- Status -->
-        <div>
-          <label class="flex items-center">
-            <input 
-              type="checkbox" 
-              id="is_active" 
-              name="is_active" 
-              checked
-              class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        
+        <!-- Server Selection Section -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="fas fa-server"></i>
+            Server Configuration
+          </div>
+          
+          <div>
+            <label for="server" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+              Select Server
+            </label>
+            <select 
+              id="server" 
+              name="server" 
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style="max-height: 200px; overflow-y: auto;"
             >
-            <span class="ml-2 text-sm text-gray-700">API connection is active</span>
-          </label>
+              <option value="">Choose a server</option>
+              <% if (servers && servers.length > 0) { %>
+                <% servers.forEach(function (obj, i){ %>
+                  <% var isSelected = (obj._id || obj.id) == myApi?.server_id ? "selected" : "" %>
+                  <% var serverName = obj.server_name || obj.name || 'Server ' + (i + 1) %>
+                  <option value="<%= obj._id || obj.id %>" <%= isSelected %> title="<%= serverName %>"><%= serverName.length > 50 ? serverName.substring(0, 50) + '...' : serverName %></option>
+                <% }) %>
+              <% } else { %>
+                <option value="" disabled>No servers available. Please add servers first.</option>
+              <% } %>
+            </select>
+          </div>
+        </div>
+
+        <!-- API Basic Configuration Section -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="fas fa-cog"></i>
+            API Basic Configuration
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- API Name -->
+            <div>
+              <label for="api_name" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Name
+              </label>
+              <input 
+                type="text" 
+                id="api_name" 
+                name="api_name" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="Enter API name"
+                value="<%= myApi?.api_name %>"
+              >
+            </div>
+
+            <!-- API Response Type -->
+            <div>
+              <label for="api_response_type" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Response Type
+              </label>
+              <select 
+                id="api_response_type" 
+                name="api_response_type" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="">Select response type</option>
+                <option value="text" <%= myApi?.api_response_type == 'text' ? 'selected' : '' %>>Text</option>
+                <option value="json" <%= myApi?.api_response_type == 'json' ? 'selected' : '' %>>JSON</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Authorization Headers -->
+          <div class="mt-6">
+            <label class="flex items-center">
+              <input 
+                type="checkbox" 
+                id="use_auth_headers" 
+                name="use_auth_headers" 
+                <%= myApi?.use_auth_headers ? 'checked' : '' %>
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              >
+              <span class="ml-2 text-sm text-gray-700">Does your API use Authorization Headers?</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- API URLs Section -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="fas fa-link"></i>
+            API Endpoints
+          </div>
+          
+          <div class="space-y-6">
+            <!-- Get Number URL -->
+            <div>
+              <label for="get_number_url" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Get Number URL
+              </label>
+              <input 
+                type="url" 
+                id="get_number_url" 
+                name="get_number_url" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="https://api.example.com/get-number"
+                value="<%= myApi?.get_number_url %>"
+              >
+            </div>
+
+            <!-- Get Message/Status URL -->
+            <div>
+              <label for="get_message_url" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Get Message/Status URL
+              </label>
+              <input 
+                type="url" 
+                id="get_message_url" 
+                name="get_message_url" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="https://api.example.com/get-message"
+                value="<%= myApi?.get_message_url %>"
+              >
+              <p class="mt-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                <strong>Helper:</strong> How to know that get status URL has sent is a success message... also what is the path to message text if response type is JSON.
+              </p>
+            </div>
+
+            <!-- Cancel Number URL -->
+            <div>
+              <label for="cancel_number_url" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Cancel Number URL
+              </label>
+              <input 
+                type="url" 
+                id="cancel_number_url" 
+                name="cancel_number_url" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="https://api.example.com/cancel-number"
+                value="<%= myApi?.cancel_number_url %>"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- API Settings Section -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="fas fa-sliders-h"></i>
+            API Settings
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Auto Cancel Minutes -->
+            <div>
+              <label for="auto_cancel_minutes" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API AutoCancel Number in Minutes
+              </label>
+              <input 
+                type="number" 
+                id="auto_cancel_minutes" 
+                name="auto_cancel_minutes" 
+                required
+                min="1"
+                max="60"
+                value="<%= myApi?.auto_cancel_minutes || 5 %>"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="5"
+              >
+            </div>
+
+            <!-- Retry Times -->
+            <div>
+              <label for="retry_times" class="block text-sm font-medium text-gray-700 mb-2 required-field">
+                API Retry Get Number URL _ times
+              </label>
+              <input 
+                type="number" 
+                id="retry_times" 
+                name="retry_times" 
+                required
+                min="0"
+                max="10"
+                value="<%= myApi?.retry_times || 0 %>"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="0"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Info Section -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="fas fa-list"></i>
+            Service Information
+          </div>
+          
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-3">Your Selected Server will include following services:</h4>
+            <div id="serviceInfoBox" class="service-info-box text-sm text-gray-600">
+              <div class="text-gray-500 italic">
+                <i class="fas fa-info-circle mr-1"></i>
+                Select a server to view available services...
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Submit Button -->
@@ -163,6 +335,54 @@
 
   <!-- Form JavaScript -->
   <script>
+    // Update service info when server selection changes
+    document.getElementById('server').addEventListener('change', function() {
+      updateServiceInfo(this.value);
+    });
+
+    function updateServiceInfo(serverId) {
+      const serviceInfoBox = document.getElementById('serviceInfoBox');
+      
+      if (!serverId) {
+        serviceInfoBox.innerHTML = `
+          <div class="text-gray-500 italic">
+            <i class="fas fa-info-circle mr-1"></i>
+            Select a server to view available services...
+          </div>
+        `;
+        return;
+      }
+
+      // For now, show a placeholder message
+      // In a real implementation, you would fetch services for the selected server
+      serviceInfoBox.innerHTML = `
+        <div class="text-gray-500 italic">
+          <i class="fas fa-spinner fa-spin mr-1"></i>
+          Loading services for selected server...
+        </div>
+      `;
+
+      // Simulate loading services (replace with actual API call)
+      setTimeout(() => {
+        serviceInfoBox.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-2 bg-white rounded border">
+              <span class="font-medium">WhatsApp</span>
+              <span class="text-green-600 text-xs">Available</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-white rounded border">
+              <span class="font-medium">Telegram</span>
+              <span class="text-green-600 text-xs">Available</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-white rounded border">
+              <span class="font-medium">Gmail</span>
+              <span class="text-green-600 text-xs">Available</span>
+            </div>
+          </div>
+        `;
+      }, 1000);
+    }
+
     document.getElementById('connectApiForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -173,27 +393,35 @@
       const formData = new FormData(this);
       const apiData = {
         server_id: formData.get('server'),
-        api_url: formData.get('api_url'),
-        api_key: formData.get('api_key'),
-        api_type: formData.get('api_type'),
-        status: formData.get('is_active') === 'on'
+        api_name: formData.get('api_name'),
+        use_auth_headers: formData.get('use_auth_headers') === 'on',
+        api_response_type: formData.get('api_response_type'),
+        get_number_url: formData.get('get_number_url'),
+        get_message_url: formData.get('get_message_url'),
+        cancel_number_url: formData.get('cancel_number_url'),
+        auto_cancel_minutes: parseInt(formData.get('auto_cancel_minutes')) || 5,
+        retry_times: parseInt(formData.get('retry_times')) || 0,
+        status: true
       };
       
       // Debug: Log the form data
       console.log('🔍 [DEBUG] Form data collected:');
       console.log('   - server_id:', apiData.server_id);
-      console.log('   - api_url:', apiData.api_url);
-      console.log('   - api_key:', apiData.api_key);
-      console.log('   - api_type:', apiData.api_type);
-      console.log('   - status:', apiData.status);
+      console.log('   - api_name:', apiData.api_name);
+      console.log('   - use_auth_headers:', apiData.use_auth_headers);
+      console.log('   - api_response_type:', apiData.api_response_type);
+      console.log('   - get_number_url:', apiData.get_number_url);
+      console.log('   - get_message_url:', apiData.get_message_url);
+      console.log('   - cancel_number_url:', apiData.cancel_number_url);
+      console.log('   - auto_cancel_minutes:', apiData.auto_cancel_minutes);
+      console.log('   - retry_times:', apiData.retry_times);
       
       // Validate required fields
-      if (!apiData.server_id || !apiData.api_url || !apiData.api_key || !apiData.api_type) {
-        console.log('❌ [DEBUG] Validation failed:');
-        console.log('   - server_id missing:', !apiData.server_id);
-        console.log('   - api_url missing:', !apiData.api_url);
-        console.log('   - api_key missing:', !apiData.api_key);
-        console.log('   - api_type missing:', !apiData.api_type);
+      const requiredFields = ['server_id', 'api_name', 'api_response_type', 'get_number_url', 'get_message_url', 'cancel_number_url'];
+      const missingFields = requiredFields.filter(field => !apiData[field]);
+      
+      if (missingFields.length > 0) {
+        console.log('❌ [DEBUG] Validation failed - missing fields:', missingFields);
         showMessage('Please fill in all required fields', 'error');
         return;
       }
@@ -270,6 +498,14 @@
         container.innerHTML = '';
       }, 5000);
     }
+
+    // Initialize service info on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const serverSelect = document.getElementById('server');
+      if (serverSelect.value) {
+        updateServiceInfo(serverSelect.value);
+      }
+    });
   </script>
 </body>
 </html>

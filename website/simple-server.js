@@ -135,6 +135,38 @@ app.get('/connect-api', async (req, res) => {
   }
 });
 
+app.get('/edit-api/:id', async (req, res) => {
+  try {
+    const apiId = req.params.id;
+    const api = await database.getApiById(apiId);
+    const servers = await database.getServers();
+    
+    // Convert MongoDB _id to id for template compatibility
+    const processedServers = servers.map(server => ({
+      ...server,
+      id: server._id.toString()
+    }));
+    
+    if (!api) {
+      return res.status(404).render('not-found', { 
+        page: 'not-found'
+      });
+    }
+    
+    res.render('edit-api', { 
+      api,
+      servers: processedServers,
+      page: 'edit-api'
+    });
+  } catch (error) {
+    console.error('Error loading edit-api page:', error);
+    res.status(500).render('error', { 
+      message: 'Error loading page',
+      page: 'edit-api'
+    });
+  }
+});
+
 app.get('/bot-settings', async (req, res) => {
   try {
     const setting = await database.getSettings();
@@ -372,35 +404,21 @@ app.post('/connect-api', async (req, res) => {
   console.log('📝 [DEBUG] Request body:', req.body);
   
   try {
-    const { server_id, api_url, api_key, api_type, status } = req.body;
+    const apiData = req.body;
     
-    console.log('🔍 [DEBUG] Extracted data:');
-    console.log('   - server_id:', server_id);
-    console.log('   - api_url:', api_url);
-    console.log('   - api_key:', api_key);
-    console.log('   - api_type:', api_type);
-    console.log('   - status:', status);
+    console.log('🔍 [DEBUG] Extracted data:', apiData);
     
-    if (!server_id || !api_url || !api_key) {
-      console.log('❌ [DEBUG] Missing required fields');
+    // Validate required fields
+    const requiredFields = ['server_id', 'api_name', 'api_response_type', 'get_number_url', 'get_message_url', 'cancel_number_url'];
+    const missingFields = requiredFields.filter(field => !apiData[field]);
+    
+    if (missingFields.length > 0) {
+      console.log('❌ [DEBUG] Missing required fields:', missingFields);
       return res.status(400).json({ 
         status: 0, 
-        message: 'Required fields are missing' 
+        message: 'Required fields are missing: ' + missingFields.join(', ')
       });
     }
-
-    // Get server name
-    const servers = await database.getServers();
-    const server = servers.find(s => s._id.toString() === server_id);
-    
-    const apiData = {
-      server_id,
-      server_name: server ? server.server_name : process.env.DEFAULT_SERVER_NAME || 'Unknown Server',
-      api_url,
-      api_key,
-      api_type: api_type || process.env.DEFAULT_API_TYPE || 'GET',
-      status: status === 'true'
-    };
 
     console.log('💾 [DEBUG] API data to save:', apiData);
     const result = await database.addApi(apiData);
@@ -415,7 +433,72 @@ app.post('/connect-api', async (req, res) => {
     console.error('❌ [DEBUG] Error connecting API:', error);
     res.status(500).json({ 
       status: 0, 
-      message: 'Error connecting API' 
+      message: 'Error connecting API: ' + error.message
+    });
+  }
+});
+
+app.put('/update-api/:id', async (req, res) => {
+  console.log('🔍 [DEBUG] /update-api PUT request received');
+  console.log('📝 [DEBUG] Request body:', req.body);
+  console.log('🆔 [DEBUG] API ID:', req.params.id);
+  
+  try {
+    const apiId = req.params.id;
+    const apiData = req.body;
+    
+    console.log('🔍 [DEBUG] Extracted data:', apiData);
+    
+    // Validate required fields
+    const requiredFields = ['server_id', 'api_name', 'api_response_type', 'get_number_url', 'get_message_url', 'cancel_number_url'];
+    const missingFields = requiredFields.filter(field => !apiData[field]);
+    
+    if (missingFields.length > 0) {
+      console.log('❌ [DEBUG] Missing required fields:', missingFields);
+      return res.status(400).json({ 
+        status: 0, 
+        message: 'Required fields are missing: ' + missingFields.join(', ')
+      });
+    }
+
+    console.log('💾 [DEBUG] API data to update:', apiData);
+    const result = await database.updateApi(apiId, apiData);
+    console.log('✅ [DEBUG] API updated successfully:', result);
+    
+    res.json({ 
+      status: 1, 
+      message: 'API updated successfully!',
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error updating API:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error updating API: ' + error.message
+    });
+  }
+});
+
+app.delete('/delete-api/:id', async (req, res) => {
+  console.log('🔍 [DEBUG] /delete-api DELETE request received');
+  console.log('🆔 [DEBUG] API ID:', req.params.id);
+  
+  try {
+    const apiId = req.params.id;
+    const result = await database.deleteApi(apiId);
+    
+    console.log('✅ [DEBUG] API deleted successfully:', result);
+    
+    res.json({ 
+      status: 1, 
+      message: 'API deleted successfully!',
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error deleting API:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error deleting API: ' + error.message
     });
   }
 });
