@@ -48,7 +48,7 @@
           >
             <option value="">Select a server</option>
             <% servers.forEach(server => { %>
-              <option value="<%= server._id %>" <%= service.server_id === server._id.toString() ? 'selected' : '' %>>
+              <option value="<%= server._id %>" <%= service.server_name === server.server_name ? 'selected' : '' %>>
                 <%= server.server_name %> (<%= server.country %>)
               </option>
             <% }) %>

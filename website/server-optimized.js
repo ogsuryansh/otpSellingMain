@@ -12,9 +12,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
     },
   },
 }));
@@ -55,9 +57,20 @@ app.get('/api/health', (req, res) => {
 // Test route
 app.get('/test', (req, res) => {
   res.json({ 
-    message: 'Test route working!',
+    message: 'SERVER-OPTIMIZED.JS is running!',
     environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    server: 'server-optimized.js',
+    routes: {
+      'GET /test': 'This route',
+      'POST /clear-all-services': 'Clear all services',
+      'POST /clear-dashboard-stats': 'Clear dashboard stats',
+      'POST /add-server': 'Add server',
+      'POST /add-service': 'Add service',
+      'DELETE /delete-server/:id': 'Delete server',
+      'DELETE /delete-service/:id': 'Delete service',
+      'DELETE /delete-all-servers': 'Delete all servers'
+    }
   });
 });
 
@@ -163,11 +176,11 @@ if (database) {
     }
     
     try {
-      const myServicesData = await database.getMyServicesData();
+      const data = await database.getMyServicesData();
       const flags = await database.getFlags();
       
       res.render('my-services', { 
-        myServicesData,
+        data,
         flags,
         page: 'my-services'
       });
@@ -205,6 +218,217 @@ if (database) {
       res.json({ success: true, data: apis });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Clear all services route
+  app.post('/clear-all-services', async (req, res) => {
+    console.log('🗑️ [DEBUG] /clear-all-services route accessed');
+    
+    try {
+      const result = await database.clearAllServices();
+      
+      console.log('✅ [DEBUG] All services cleared successfully via API');
+      res.json({ 
+        status: 1, 
+        message: `All services cleared successfully! (${result.deletedCount} services removed)` 
+      });
+    } catch (error) {
+      console.error('❌ [DEBUG] Error clearing all services:', error);
+      res.status(500).json({ 
+        status: 0, 
+        message: 'Error clearing all services' 
+      });
+    }
+  });
+
+  // Clear dashboard stats route
+  app.post('/clear-dashboard-stats', async (req, res) => {
+    console.log('🗑️ [DEBUG] /clear-dashboard-stats route accessed');
+    
+    try {
+      const result = await database.clearDashboardStats();
+      
+      if (result) {
+        console.log('✅ [DEBUG] Dashboard stats cleared successfully via API');
+        res.json({ 
+          status: 1, 
+          message: 'Dashboard stats cleared successfully! The dashboard will now show default values.' 
+        });
+      } else {
+        console.log('⚠️ [DEBUG] No dashboard stats found to clear via API');
+        res.json({ 
+          status: 0, 
+          message: 'No dashboard stats found to clear.' 
+        });
+      }
+    } catch (error) {
+      console.error('❌ [DEBUG] Error clearing dashboard stats via API:', error);
+      res.status(500).json({ 
+        status: 0, 
+        message: 'Error clearing dashboard stats' 
+      });
+    }
+  });
+
+  // Add server route
+  app.post('/add-server', async (req, res) => {
+    console.log('🔍 [DEBUG] /add-server POST request received');
+    console.log('📝 [DEBUG] Request body:', req.body);
+    
+    try {
+      const { name, code, flag } = req.body;
+      
+      console.log('🔍 [DEBUG] Extracted data:');
+      console.log('   - name:', name);
+      console.log('   - code:', code);
+      console.log('   - flag:', flag);
+      
+      if (!name || !code || !flag) {
+        console.log('❌ [DEBUG] Missing required fields');
+        return res.status(400).json({ 
+          status: 0, 
+          message: 'All fields are required' 
+        });
+      }
+
+      const serverData = {
+        server_name: name,
+        country: code,
+        flag: flag
+      };
+
+      console.log('💾 [DEBUG] Server data to save:', serverData);
+      const result = await database.addServer(serverData);
+      console.log('✅ [DEBUG] Server saved successfully:', result);
+      
+      // Update dashboard stats after adding server
+      console.log('🔄 [DEBUG] Updating dashboard stats...');
+      await database.updateDashboardStats();
+      console.log('✅ [DEBUG] Dashboard stats updated');
+      
+      res.json({ 
+        status: 1, 
+        message: 'Server added successfully!',
+        data: result
+      });
+    } catch (error) {
+      console.error('❌ [DEBUG] Error adding server:', error);
+      res.status(500).json({ 
+        status: 0, 
+        message: 'Error adding server' 
+      });
+    }
+  });
+
+  // Add service route
+  app.post('/add-service', async (req, res) => {
+    try {
+      const { server_id, service_id, name, code, description, price, cancel_disable } = req.body;
+      
+      if (!server_id || !service_id || !name || !code || !price) {
+        return res.status(400).json({ 
+          status: 0, 
+          message: 'Required fields are missing' 
+        });
+      }
+
+      // Get server name
+      const servers = await database.getServers();
+      const server = servers.find(s => s._id.toString() === server_id);
+      
+      const serviceData = {
+        server_id,
+        server_name: server ? server.server_name : process.env.DEFAULT_SERVER_NAME || 'Unknown Server',
+        service_id,
+        name,
+        code,
+        description: description || process.env.DEFAULT_SERVICE_DESCRIPTION || '',
+        price: `₹${price}`,
+        cancel_disable: cancel_disable || process.env.DEFAULT_CANCEL_DISABLE || '5',
+        users: parseInt(process.env.DEFAULT_SERVICE_USERS) || 0
+      };
+
+      const result = await database.addService(serviceData);
+      
+      // Update dashboard stats after adding service
+      await database.updateDashboardStats();
+      
+      res.json({ 
+        status: 1, 
+        message: 'Service added successfully!',
+        data: result
+      });
+    } catch (error) {
+      console.error('Error adding service:', error);
+      res.status(500).json({ 
+        status: 0, 
+        message: 'Error adding service' 
+      });
+    }
+  });
+
+  // Delete server route
+  app.delete('/delete-server/:id', async (req, res) => {
+    try {
+      console.log(`🗑️ [DEBUG] Deleting server with ID: ${req.params.id}`);
+      const { id } = req.params;
+      const result = await database.deleteServer(id);
+      
+      if (result.deletedCount > 0) {
+        console.log(`✅ [DEBUG] Successfully deleted server with ID: ${id}`);
+        // Update dashboard stats after deleting server
+        await database.updateDashboardStats();
+        res.json({ status: 1, message: 'Server deleted successfully!' });
+      } else {
+        console.log(`❌ [DEBUG] Server not found with ID: ${id}`);
+        res.status(404).json({ status: 0, message: 'Server not found' });
+      }
+    } catch (error) {
+      console.error('❌ [DEBUG] Error deleting server:', error);
+      res.status(500).json({ status: 0, message: 'Error deleting server' });
+    }
+  });
+
+  // Delete service route
+  app.delete('/delete-service/:id', async (req, res) => {
+    try {
+      console.log(`🗑️ [DEBUG] Deleting service with ID: ${req.params.id}`);
+      const { id } = req.params;
+      const result = await database.deleteService(id);
+      
+      if (result.deletedCount > 0) {
+        console.log(`✅ [DEBUG] Successfully deleted service with ID: ${id}`);
+        // Update dashboard stats after deleting service
+        await database.updateDashboardStats();
+        res.json({ status: 1, message: 'Service deleted successfully!' });
+      } else {
+        console.log(`❌ [DEBUG] Service not found with ID: ${id}`);
+        res.status(404).json({ status: 0, message: 'Service not found' });
+      }
+    } catch (error) {
+      console.error('❌ [DEBUG] Error deleting service:', error);
+      res.status(500).json({ status: 0, message: 'Error deleting service' });
+    }
+  });
+
+  // Delete all servers route
+  app.delete('/delete-all-servers', async (req, res) => {
+    try {
+      console.log('🗑️ [DEBUG] Bulk deleting all servers');
+      const result = await database.deleteAllServers();
+      
+      console.log(`✅ [DEBUG] Successfully deleted ${result.deletedCount} servers`);
+      // Update dashboard stats after deleting servers
+      await database.updateDashboardStats();
+      res.json({ 
+        status: 1, 
+        message: `Successfully deleted ${result.deletedCount} servers!`,
+        deletedCount: result.deletedCount
+      });
+    } catch (error) {
+      console.error('❌ [DEBUG] Error bulk deleting servers:', error);
+      res.status(500).json({ status: 0, message: 'Error deleting servers' });
     }
   });
 
@@ -247,7 +471,12 @@ app.use((req, res) => {
       '/test',
       '/admin-dashboard',
       '/add-server',
-      '/my-services'
+      '/my-services',
+      '/clear-all-services',
+      '/clear-dashboard-stats',
+      '/delete-server/:id',
+      '/delete-service/:id',
+      '/delete-all-servers'
     ]
   });
 });
@@ -288,9 +517,10 @@ process.on('SIGINT', () => {
 // Only start the server if this file is run directly
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`🚀 Optimized server running on port ${port}`);
+    console.log(`🚀 SERVER-OPTIMIZED.JS running on port ${port}`);
     console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📊 Database: ${database ? 'Available' : 'Not available'}`);
+    console.log(`✅ Clear-all-services route: POST /clear-all-services`);
   });
 }
 

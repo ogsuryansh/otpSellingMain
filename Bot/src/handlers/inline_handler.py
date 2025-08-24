@@ -42,6 +42,7 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Handle inline queries for services"""
     try:
         logger.info("🚀 INLINE QUERY HANDLER STARTED")
+        logger.info("🔥🔥🔥 THIS SHOULD APPEAR WHEN YOU SEARCH 🔥🔥🔥")
         logger.info("=" * 60)
         
         # Handle null checks for inline queries
@@ -118,44 +119,74 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
             services = filtered_services
             logger.info(f"🔍 Filtered to {len(services)} services matching '{query}'")
         
-        # Create inline results - limit to 1 result to prevent overflow
+        # Filter out services with empty or "Unknown" names
+        if services:
+            valid_services = []
+            for service in services:
+                service_name = service.get('name', '').strip()
+                if service_name and service_name.lower() != 'unknown' and service_name != '':
+                    valid_services.append(service)
+                else:
+                    logger.info(f"🔍 Filtering out invalid service: {service_name}")
+            
+            services = valid_services
+            logger.info(f"🔍 After filtering invalid names: {len(services)} valid services")
+        
+        # If no services after filtering, return empty results
+        if not services:
+            logger.warning("⚠️ No valid services found after filtering")
+            await update.inline_query.answer(
+                results=[],
+                cache_time=60
+            )
+            return
+        
+        # Create inline results - show all services with same name
         results = []
         if services:
-            # Only create 1 result for the first service
-            service = services[0]
-            logger.info(f"🔍 Creating result for service: {service.get('name', 'UNKNOWN')}")
+            # Group services by name to show all variants
+            service_groups = {}
+            for service in services:
+                service_name = service.get('name', '').strip()
+                # Double-check to ensure we don't include invalid service names
+                if service_name and service_name.lower() != 'unknown' and service_name != '':
+                    if service_name not in service_groups:
+                        service_groups[service_name] = []
+                    service_groups[service_name].append(service)
             
-            service_id = service.get('id', 'NO_ID')
-            service_name = service.get('name', 'Unknown Service')
-            service_desc = service.get('description', 'No description available')
+            logger.info(f"🔍 Found {len(service_groups)} unique service names")
             
-            logger.info(f"🔍 Service details for result:")
-            logger.info(f"  - ID: {service_id}")
-            logger.info(f"  - Name: {service_name}")
-            logger.info(f"  - Description: {service_desc}")
-            
-            result_id = f"service_{service_id}"
-            title = f"📦 {service_name}"
-            description = service_desc
-            
-            logger.info(f"🔍 Creating InlineQueryResultArticle:")
-            logger.info(f"  - ID: {result_id}")
-            logger.info(f"  - Title: {title}")
-            logger.info(f"  - Description: {description}")
-            
-            result = InlineQueryResultArticle(
-                id=result_id,
-                title=title,
-                description=description,
-                input_message_content=InputTextMessageContent(
-                    message_text=f"➤ Selected Service : {service_name}\n"
-                               f"↓ Choose Server Below",
-                    parse_mode="HTML"
+            # Create one result per unique service name
+            for service_name, service_variants in service_groups.items():
+                # Use the first service as the representative
+                service = service_variants[0]
+                service_id = service.get('id', 'NO_ID')
+                service_desc = service.get('description', 'No description available')
+                
+                logger.info(f"🔍 Creating result for service group: {service_name}")
+                logger.info(f"  - Service variants: {len(service_variants)}")
+                logger.info(f"  - Representative ID: {service_id}")
+                
+                result_id = f"service_{service_id}"
+                title = f"📦 {service_name}"
+                description = f"{service_desc} ({len(service_variants)} servers available)"
+                
+                logger.info(f"🔍 Creating InlineQueryResultArticle:")
+                logger.info(f"  - ID: {result_id}")
+                logger.info(f"  - Title: {title}")
+                logger.info(f"  - Description: {description}")
+                
+                result = InlineQueryResultArticle(
+                    id=result_id,
+                    title=title,
+                    description=description,
+                    input_message_content=InputTextMessageContent(
+                        message_text=f"/show_server {service_name.upper()}",
+                        parse_mode="HTML"
+                    )
                 )
-            )
-            results.append(result)
-            logger.info(f"✅ Result created successfully")
-            logger.info(f"🔍 Result ID that will be used: {result_id}")
+                results.append(result)
+                logger.info(f"✅ Result created for {service_name}")
         else:
             logger.warning("⚠️ No services to create results for")
         
@@ -169,6 +200,17 @@ async def handle_inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         logger.info("✅ Inline query answered successfully")
         logger.info("=" * 60)
+        
+        # Send a test message to verify inline query is working
+        if update.effective_user:
+            try:
+                await context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text="🔍 DEBUG: Inline query handler is working!"
+                )
+                logger.info("✅ Test message sent for inline query")
+            except Exception as test_error:
+                logger.error(f"❌ Failed to send test message: {test_error}")
         
     except Exception as e:
         logger.error(f"❌ Error in inline query handler: {e}")
@@ -191,16 +233,13 @@ async def handle_chosen_inline_result(update: Update, context: ContextTypes.DEFA
         logger.info("🔥🔥🔥 THIS SHOULD APPEAR WHEN YOU CLICK ON A SERVICE 🔥🔥🔥")
         logger.info("=" * 60)
         
-        # Send immediate test message to see if handler is working
+        # Send immediate test message to verify handler is working
         if update.effective_user:
-            try:
-                await context.bot.send_message(
-                    chat_id=update.effective_user.id,
-                    text="🔍 DEBUG: Chosen inline result handler is working!"
-                )
-                logger.info("✅ Test message sent successfully")
-            except Exception as test_error:
-                logger.error(f"❌ Failed to send test message: {test_error}")
+            await context.bot.send_message(
+                chat_id=update.effective_user.id,
+                text="🔍 DEBUG: Inline result handler is working!"
+            )
+            logger.info("✅ Test message sent")
         
         # Handle null checks for inline queries
         if update.effective_user:
@@ -245,132 +284,67 @@ async def handle_chosen_inline_result(update: Update, context: ContextTypes.DEFA
         logger.info(f"🔍 User {user_id} selected service {service_id}")
         logger.info("=" * 50)
         
-        # Get service data from UserDatabase (same source as inline query)
-        logger.info("📦 STEP 1: Initializing UserDatabase for service lookup...")
+        # Simple approach: Just show server variants for the selected service
+        logger.info("📦 STEP 1: Getting service variants...")
         user_db = UserDatabase()
-        logger.info(f"🔍 UserDatabase instance: {user_db}")
+        await user_db.initialize()
         
-        if not hasattr(user_db, 'client') or user_db.client is None:
-            logger.info("📦 Initializing database connection...")
-            await user_db.initialize()
-            logger.info("✅ Database initialized")
-        
-        logger.info(f"🔍 STEP 2: Looking up service with ID: {service_id}")
+        # Get the selected service
         service = await user_db.get_service_by_id(service_id)
-        logger.info(f"🔍 Service lookup result: {service}")
-        
         if not service:
-            logger.error(f"❌ Service {service_id} not found in UserDatabase")
-            # For inline queries, we need to send to the user's chat
-            if update.effective_user:
-                await context.bot.send_message(
-                    chat_id=update.effective_user.id,
-                    text=f"❌ Service not found. Please try again."
-                )
+            await context.bot.send_message(
+                chat_id=update.effective_user.id,
+                text="❌ Service not found. Please try again."
+            )
             return
         
         service_name = service.get('name', 'Unknown Service')
-        service_price = service.get('price', '₹0')
-        logger.info(f"🔍 STEP 3: Found service: {service_name} with price: {service_price}")
-        logger.info(f"🔍 Full service data: {service}")
-        logger.info("=" * 50)
+        logger.info(f"🔍 STEP 2: Found service: {service_name}")
         
-        # Initialize service database for getting servers
-        logger.info("📦 STEP 4: Initializing ServiceDatabase for server lookup...")
-        service_db = ServiceDatabase()
-        logger.info(f"🔍 ServiceDatabase instance: {service_db}")
-        await service_db.initialize()
-        logger.info("✅ ServiceDatabase initialized")
+        # Get all variants of this service
+        all_services = await user_db.get_services()
+        service_variants = [s for s in all_services if s.get('name') == service_name]
         
-        # Debug: Check what's in the servers collection
-        logger.info("🔍 STEP 5: Debugging servers collection...")
-        await service_db.debug_servers_collection()
+        logger.info(f"🔍 STEP 3: Found {len(service_variants)} variants for {service_name}")
         
-        # Get servers for this service
-        logger.info(f"🔍 STEP 6: Getting servers for service ID: {service_id}")
-        logger.info(f"🔍 Service name: {service_name}")
-        servers = await service_db.get_servers_for_service(service_id)
-        logger.info(f"🔍 STEP 7: Found {len(servers)} servers for service {service_name}")
-        logger.info(f"🔍 Servers data: {servers}")
-        logger.info("=" * 50)
-        
-        # Debug: Print each server data
-        logger.info(f"🔍 STEP 8: Analyzing {len(servers)} servers for {service_name}:")
-        for i, server in enumerate(servers):
-            logger.info(f"🔍 Server {i+1}:")
-            logger.info(f"  - ID: {server.get('_id')}")
-            logger.info(f"  - Name: {server.get('name')}")
-            logger.info(f"  - Country Code: {server.get('country_code')}")
-            logger.info(f"  - Rating: {server.get('rating')}")
-            logger.info(f"  - Enabled Services: {server.get('enabled_services')}")
-            logger.info(f"  - Full server data: {server}")
-        
-        if not servers:
-            # Send message without keyboard if no servers
-            logger.info(f"🔍 STEP 9: No servers found for {service_name}, sending error message")
-            if update.effective_user:
-                await context.bot.send_message(
-                    chat_id=update.effective_user.id,
-                    text=f"➤ Selected Service : {service_name}\n"
-                         f"↓ Choose Server Below\n\n"
-                         f"❌ No servers available for this service.\n"
-                         f"🔍 Debug: Service ID {service_id} has 0 servers"
-                )
+        if not service_variants:
+            await context.bot.send_message(
+                chat_id=update.effective_user.id,
+                text=f"❌ No server variants available for {service_name}."
+            )
             return
         
-        # Create inline keyboard with servers showing price and diamond emoji
-        logger.info(f"🔧 STEP 10: Creating inline keyboard with {len(servers)} servers for {service_name}")
-        keyboard = []
-        for i, server in enumerate(servers):
-            server_id = str(server['_id'])
-            server_name = server.get('name', 'Unknown Server')
-            country_code = server.get('country_code', 'US')
-            rating = server.get('rating', 0)
-            
-            logger.info(f"🔍 Processing server {i+1} for {service_name}:")
-            logger.info(f"  - Server ID: {server_id}")
-            logger.info(f"  - Server Name: {server_name}")
-            logger.info(f"  - Country Code: {country_code}")
-            logger.info(f"  - Rating: {rating}")
-            
-            # Get country flag
-            flag = COUNTRY_FLAGS.get(country_code.upper(), '🌍')
-            logger.info(f"  - Flag: {flag}")
-            
-            # Create button text with price and diamond emoji
-            button_text = f"{server_name} - {service_price} 💎"
-            logger.info(f"  - Button Text: {button_text}")
-            
-            # Create callback data
-            callback_data = f"srv:{service_id}:{server_id}"
-            logger.info(f"  - Callback Data: {callback_data}")
-            
-            keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
-            logger.info(f"  - ✅ Button {i+1} added to keyboard")
+        # Directly execute the show_server command
+        command = f"/show_server {service_name.upper()}"
         
-        logger.info(f"🔍 STEP 11: Created keyboard with {len(keyboard)} buttons")
-        logger.info(f"🔍 Keyboard structure: {keyboard}")
+        logger.info(f"🔧 STEP 4: Directly executing: {command}")
         
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        logger.info(f"🔍 Reply markup created: {reply_markup}")
+        # Create fake context with the service name as argument
+        fake_context = type('Context', (), {
+            'args': [service_name.upper()],
+            'bot': context.bot
+        })()
         
-        # Send response with inline keyboard
-        message_text = f"➤ Selected Service : {service_name}\n↓ Choose Server Below\n\n🔍 Found {len(servers)} servers for {service_name}:"
-        logger.info(f"🔍 STEP 12: Message text: {message_text}")
+        # Create fake update
+        fake_update = type('Update', (), {
+            'message': type('Message', (), {
+                'reply_text': lambda text, **kwargs: context.bot.send_message(
+                    chat_id=update.effective_user.id, text=text, **kwargs
+                ),
+                'text': command,
+                'chat': {'id': update.effective_user.id},
+                'from_user': update.effective_user
+            })(),
+            'effective_user': update.effective_user,
+            'effective_chat': type('Chat', (), {'id': update.effective_user.id})()
+        })()
         
-        # For inline queries, send to the user's chat
-        chat_id = update.effective_user.id if update.effective_user else None
-        if chat_id:
-            logger.info(f"🔍 STEP 13: Sending to chat ID: {chat_id}")
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=message_text,
-                reply_markup=reply_markup
-            )
-            logger.info(f"✅ STEP 14: Successfully sent {len(servers)} servers for {service_name}")
-            logger.info("=" * 50)
-        else:
-            logger.error("❌ No valid chat ID found for sending message")
+        # Import and call the show_server handler directly
+        from src.handlers.service_handler import handle_show_server
+        await handle_show_server(fake_update, fake_context)
+        
+        logger.info(f"✅ Successfully executed command for {service_name}")
+        logger.info("=" * 50)
         
     except Exception as e:
         logger.error(f"❌ Error in chosen inline result handler: {e}")

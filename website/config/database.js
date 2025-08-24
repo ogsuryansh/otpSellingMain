@@ -476,6 +476,20 @@ class Database {
     }
   }
 
+  async clearAllServices() {
+    try {
+      console.log('🗑️ [DEBUG] Clearing all services from database...');
+      const servicesCollection = this.getCollection('services');
+      const result = await servicesCollection.deleteMany({});
+      
+      console.log(`✅ [DEBUG] Cleared ${result.deletedCount} services from database`);
+      return result;
+    } catch (error) {
+      console.error('❌ [DEBUG] Error clearing services:', error);
+      throw error;
+    }
+  }
+
   // API methods
   async getApis() {
     try {

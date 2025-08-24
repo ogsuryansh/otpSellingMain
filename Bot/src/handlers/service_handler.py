@@ -55,46 +55,38 @@ async def handle_show_server(update: Update, context: ContextTypes.DEFAULT_TYPE)
         service_name = context.args[0].upper()
         logger.info(f"🔍 User {update.effective_user.id} requested servers for service: {service_name}")
         
-        # Initialize service database
-        service_db = ServiceDatabase()
-        await service_db.initialize()
+        # Initialize user database (same as other handlers)
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        await user_db.initialize()
         
-        # Find the service
-        service = await service_db.get_service_by_name(service_name)
-        if not service:
+        # Get all services and find the one with matching name
+        all_services = await user_db.get_services()
+        service_variants = [s for s in all_services if s.get('name', '').upper() == service_name]
+        
+        if not service_variants:
             await update.message.reply_text(
                 f"❌ Service '{service_name}' not found.\n"
-                "Please check the service name and try again."
+                "Available services: " + ", ".join(set(s.get('name', '') for s in all_services))
             )
             return
         
-        # Get servers for this service
-        service_id = str(service['_id'])
-        servers = await service_db.get_servers_for_service(service_id)
+        # Use the first variant as representative
+        service = service_variants[0]
+        service_id = service.get('id', 'NO_ID')
         
-        if not servers:
-            await update.message.reply_text(
-                f"❌ No servers found for service '{service_name}'.\n"
-                "Please try another service or contact admin."
-            )
-            return
-        
-        # Create inline keyboard with servers
+        # Create inline keyboard with service variants
         keyboard = []
-        for server in servers:
-            server_id = str(server['_id'])
-            server_name = server.get('name', 'Unknown Server')
-            country_code = server.get('country_code', 'US')
-            rating = server.get('rating', 0)
+        for service_variant in service_variants:
+            variant_id = service_variant.get('id', 'NO_ID')
+            server_name = service_variant.get('server', 'Unknown Server')
+            price = service_variant.get('price', '₹0')
             
-            # Get country flag
-            flag = COUNTRY_FLAGS.get(country_code.upper(), '🌍')
+            # Create button text with price and diamond emoji
+            button_text = f"{server_name} - {price} 💎"
             
-            # Create button text
-            button_text = f"🌟 {server_name} → {flag} {rating}💎"
-            
-            # Create callback data
-            callback_data = f"srv:{service_id}:{server_id}"
+            # Create callback data for server selection
+            callback_data = f"server_{variant_id}"
             
             keyboard.append([InlineKeyboardButton(button_text, callback_data=callback_data)])
         
@@ -107,7 +99,7 @@ async def handle_show_server(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=reply_markup
         )
         
-        logger.info(f"✅ Sent {len(servers)} servers for service {service_name}")
+        logger.info(f"✅ Sent {len(service_variants)} server variants for service {service_name}")
         
     except Exception as e:
         logger.error(f"❌ Error in handle_show_server: {e}")

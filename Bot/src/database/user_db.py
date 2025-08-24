@@ -603,10 +603,15 @@ class UserDatabase:
             formatted_services = []
             for service in active_services:
                 service_id = str(service.get("_id"))
-                service_name = service.get("name", "Unknown Service")
+                service_name = service.get("name", "").strip()
                 service_desc = service.get("description", "No description available")
                 service_price = service.get("price", "₹0")
                 service_server = service.get("server_name", "Unknown Server")
+                
+                # Skip services with empty or invalid names
+                if not service_name or service_name.lower() == "unknown service" or service_name.lower() == "unknown":
+                    logger.info(f"🔍 Skipping service with invalid name: '{service_name}'")
+                    continue
                 
                 logger.info(f"🔍 Formatting service: {service_name}")
                 logger.info(f"  - ID: {service_id}")
@@ -637,9 +642,15 @@ class UserDatabase:
                 active_services = [s for s in all_services if s.get("is_active", True)]
                 
                 for service in active_services:
+                    service_name = service.get("service_name", "").strip()
+                    # Skip services with empty or invalid names
+                    if not service_name or service_name.lower() == "unknown service" or service_name.lower() == "unknown":
+                        logger.info(f"🔍 Skipping sample service with invalid name: '{service_name}'")
+                        continue
+                        
                     formatted_service = {
                         "id": str(service.get("_id")),
-                        "name": service.get("service_name", "Unknown Service"),
+                        "name": service_name,
                         "description": service.get("service_description", "No description available"),
                         "price": service.get("service_price", "0"),
                         "server": service.get("server_name", "Unknown Server")
@@ -762,7 +773,16 @@ class UserDatabase:
                     "name": "WhatsApp",
                     "description": "Get OTP for WhatsApp verification. Fast and reliable service.",
                     "price": "₹5.00",
-                    "server_name": "India Server",
+                    "server_name": "Server 1",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "WhatsApp",
+                    "description": "Get OTP for WhatsApp verification. Premium service with high success rate.",
+                    "price": "₹7.00",
+                    "server_name": "Server 2",
                     "is_active": True,
                     "createdAt": datetime.utcnow(),
                     "updatedAt": datetime.utcnow()
@@ -771,7 +791,16 @@ class UserDatabase:
                     "name": "Telegram",
                     "description": "Get OTP for Telegram verification. Instant delivery.",
                     "price": "₹3.00",
-                    "server_name": "India Server",
+                    "server_name": "Server 1",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Telegram",
+                    "description": "Get OTP for Telegram verification. Express service.",
+                    "price": "₹4.50",
+                    "server_name": "Server 2",
                     "is_active": True,
                     "createdAt": datetime.utcnow(),
                     "updatedAt": datetime.utcnow()
@@ -780,7 +809,16 @@ class UserDatabase:
                     "name": "Instagram",
                     "description": "Get OTP for Instagram verification. High success rate.",
                     "price": "₹4.00",
-                    "server_name": "India Server",
+                    "server_name": "Server 1",
+                    "is_active": True,
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                },
+                {
+                    "name": "Instagram",
+                    "description": "Get OTP for Instagram verification. Premium quality.",
+                    "price": "₹6.00",
+                    "server_name": "Server 2",
                     "is_active": True,
                     "createdAt": datetime.utcnow(),
                     "updatedAt": datetime.utcnow()
@@ -789,7 +827,7 @@ class UserDatabase:
                     "name": "Facebook",
                     "description": "Get OTP for Facebook verification. Secure and reliable.",
                     "price": "₹2.00",
-                    "server_name": "India Server",
+                    "server_name": "Server 1",
                     "is_active": True,
                     "createdAt": datetime.utcnow(),
                     "updatedAt": datetime.utcnow()
@@ -798,7 +836,7 @@ class UserDatabase:
                     "name": "Gmail",
                     "description": "Get OTP for Gmail verification. Premium service.",
                     "price": "₹4.50",
-                    "server_name": "India Server",
+                    "server_name": "Server 1",
                     "is_active": True,
                     "createdAt": datetime.utcnow(),
                     "updatedAt": datetime.utcnow()

@@ -16,6 +16,7 @@ def create_main_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("Recharge", callback_data="recharge"),
             InlineKeyboardButton("Use Promocode", callback_data="promocode")
         ],
+        # Removed search button - using only callback-based approach
         [
             InlineKeyboardButton("Profile", callback_data="profile"),
             InlineKeyboardButton("Support", callback_data="support")

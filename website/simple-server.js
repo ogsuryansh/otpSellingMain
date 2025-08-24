@@ -303,6 +303,27 @@ app.post('/clear-dashboard-stats', async (req, res) => {
   }
 });
 
+// Clear all services route
+app.post('/clear-all-services', async (req, res) => {
+  console.log('🗑️ [DEBUG] /clear-all-services route accessed');
+  
+  try {
+    const result = await database.clearAllServices();
+    
+    console.log('✅ [DEBUG] All services cleared successfully via API');
+    res.json({ 
+      status: 1, 
+      message: `All services cleared successfully! (${result.deletedCount} services removed)` 
+    });
+  } catch (error) {
+    console.error('❌ [DEBUG] Error clearing all services:', error);
+    res.status(500).json({ 
+      status: 0, 
+      message: 'Error clearing all services' 
+    });
+  }
+});
+
 // Handle form submissions
 app.post('/add-server', async (req, res) => {
   console.log('🔍 [DEBUG] /add-server POST request received');
