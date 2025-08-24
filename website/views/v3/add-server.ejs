@@ -57,10 +57,11 @@
             Server Country Code <span class="text-red-500">*</span>
           </label>
           <input 
-            type="number" 
+            type="text" 
             id="code" 
             name="code" 
             required
+            pattern="[0-9]+"
             class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 input-focus bg-white"
             placeholder="Enter country code (e.g., 91)"
             value="<%= myServer?.country %>"

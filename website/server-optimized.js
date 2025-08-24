@@ -275,27 +275,45 @@ if (database) {
   app.post('/add-server', async (req, res) => {
     console.log('🔍 [DEBUG] /add-server POST request received');
     console.log('📝 [DEBUG] Request body:', req.body);
+    console.log('📝 [DEBUG] Request headers:', req.headers);
+    console.log('📝 [DEBUG] Content-Type:', req.headers['content-type']);
     
     try {
-      const { name, code, flag } = req.body;
+      // Handle both form field names and expected database field names
+      const { name, code, flag, server_name, country } = req.body;
       
-      console.log('🔍 [DEBUG] Extracted data:');
-      console.log('   - name:', name);
-      console.log('   - code:', code);
-      console.log('   - flag:', flag);
+      console.log('🔍 [DEBUG] Raw extracted data:');
+      console.log('   - name:', name, 'type:', typeof name);
+      console.log('   - code:', code, 'type:', typeof code);
+      console.log('   - flag:', flag, 'type:', typeof flag);
+      console.log('   - server_name:', server_name, 'type:', typeof server_name);
+      console.log('   - country:', country, 'type:', typeof country);
       
-      if (!name || !code || !flag) {
+      // Use form field names if available, otherwise use direct field names
+      const serverName = name || server_name;
+      const countryCode = code || country;
+      const countryFlag = flag;
+      
+      console.log('🔍 [DEBUG] Processed data:');
+      console.log('   - serverName:', serverName);
+      console.log('   - countryCode:', countryCode);
+      console.log('   - countryFlag:', countryFlag);
+      
+      if (!serverName || !countryCode || !countryFlag) {
         console.log('❌ [DEBUG] Missing required fields');
+        console.log('   - serverName:', serverName);
+        console.log('   - countryCode:', countryCode);
+        console.log('   - countryFlag:', countryFlag);
         return res.status(400).json({ 
           status: 0, 
-          message: 'All fields are required' 
+          message: 'Invalid server data: server_name, country, and flag are required' 
         });
       }
 
       const serverData = {
-        server_name: name,
-        country: code,
-        flag: flag
+        server_name: serverName,
+        country: countryCode,
+        flag: countryFlag
       };
 
       console.log('💾 [DEBUG] Server data to save:', serverData);
@@ -316,7 +334,7 @@ if (database) {
       console.error('❌ [DEBUG] Error adding server:', error);
       res.status(500).json({ 
         status: 0, 
-        message: 'Error adding server' 
+        message: 'Error adding server: ' + error.message 
       });
     }
   });
