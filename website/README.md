@@ -1,139 +1,187 @@
-# Telegram OTP Bot - Local Development Setup
+# OTP Bot Website
 
-This is a Telegram bot application for OTP (One-Time Password) services. This guide will help you set it up for local development.
+A web dashboard for managing the Telegram OTP Bot with real-time data synchronization.
 
-## Prerequisites
+## Features
 
-- Node.js (v14 or higher)
-- MySQL database
-- Telegram Bot Token (from @BotFather)
+- 📊 Real-time dashboard with bot statistics
+- 👥 User management and monitoring
+- 🔧 Service and server management
+- 🔗 API integration management
+- 💰 Payment and balance tracking
+- 🔄 Automatic data synchronization with bot
 
-## Quick Start
+## Setup Instructions
 
-### 1. Install Dependencies
+### Prerequisites
 
+- Node.js 16+ 
+- MongoDB (local or Atlas)
+- Python 3.12+ (for bot)
+
+### Environment Configuration
+
+Create a `.env` file in the website directory:
+
+```env
+# Website Configuration
+PORT=3000
+HOST=localhost
+NODE_ENV=development
+
+# MongoDB Configuration (Same as Bot)
+MONGODB_URI=mongodb://localhost:27017/otp_bot
+MONGODB_DATABASE=otp_bot
+MONGODB_COLLECTION=users
+
+# Database Connection Settings (Same as Bot)
+DB_MAX_POOL_SIZE=10
+DB_MIN_POOL_SIZE=1
+DB_MAX_IDLE_TIME_MS=30000
+DB_CONNECT_TIMEOUT_MS=10000
+DB_SOCKET_TIMEOUT_MS=10000
+
+# Session Configuration
+SESSION_SECRET=your_session_secret_here_change_this_in_production
+
+# App Configuration
+APP_URL=http://localhost:3000
+
+# Bot Configuration (for webhook integration)
+BOT_TOKEN=your_telegram_bot_token_here
+BACKEND_URL=http://localhost:3000
+
+# Support Configuration
+SUPPORT_USERNAME=@support
+ADMIN_USER_ID=your_admin_user_id
+
+# Rate Limiting
+MAX_REQUESTS_PER_MINUTE=60
+RATE_LIMIT_WINDOW=60
+
+# Logging
+LOG_LEVEL=INFO
+```
+
+### Installation
+
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-### 2. Database Setup
-
-1. Create a MySQL database:
-```sql
-CREATE DATABASE otp_bot_local;
-```
-
-2. Update database credentials in `config.local.js`:
-```javascript
-database: {
-  host: 'localhost',
-  port: 3306,
-  name: 'otp_bot_local',
-  user: 'your_username',
-  password: 'your_password',
-}
-```
-
-### 3. Telegram Bot Setup
-
-1. Create a new bot with [@BotFather](https://t.me/botfather) on Telegram
-2. Get your bot token
-3. Update the token in `config.local.js`:
-```javascript
-telegram: {
-  botToken: 'your_actual_bot_token_here',
-  // ... other settings
-}
-```
-
-### 4. Run the Application
-
-#### Option 1: Simple Development Server
+2. Start the development server:
 ```bash
 npm run dev
 ```
 
-#### Option 2: Development with Debug
+3. For production:
 ```bash
-npm run dev:debug
+npm start
 ```
 
-#### Option 3: Development with Auto-restart (requires nodemon)
-```bash
-npm install -g nodemon
-npm run dev:nodemon
+## Data Synchronization
+
+The website and bot share the same MongoDB database to ensure data consistency. The synchronization system includes:
+
+### Automatic Sync
+- Real-time data updates between bot and website
+- Shared user data, services, and server information
+- Consistent balance and transaction tracking
+
+### Manual Sync Commands (Bot Admin)
+- `/sync` - Sync all data with website
+- `/syncusers` - Sync only user data
+- `/syncservices` - Sync only service data
+- `/syncstatus` - Check sync status
+
+### API Endpoints
+
+#### Bot Statistics
+```
+GET /api/bot-stats
+```
+Returns real-time bot statistics including user counts, balances, and transaction data.
+
+#### Sync Status
+```
+GET /api/sync-status
+```
+Returns synchronization status between bot and website databases.
+
+## Database Collections
+
+### Bot Collections
+- `users` - User data, balances, transaction history
+- `services` - Available services and pricing
+- `servers` - Server configurations and API settings
+
+### Website Collections
+- `website_users` - Synced user data for website display
+- `services` - Service data for website management
+- `servers` - Server data for website management
+- `settings` - Bot and website configuration
+- `promocodes` - Promotional codes
+- `flags` - Country flags for UI
+
+## Development
+
+### Project Structure
+```
+website/
+├── api/                 # API endpoints
+├── config/             # Configuration files
+├── middleware/         # Express middleware
+├── views/             # EJS templates
+├── public/            # Static assets
+├── package.json       # Dependencies
+└── server-optimized.js # Main server file
 ```
 
-### 5. Access the Application
-
-- Web Interface: http://localhost:3000
-- Bot Webhook: http://localhost:3000/bot
-
-## Configuration
-
-The application uses `config.local.js` for local development settings. Key configurations:
-
-- **Port**: Default 3000
-- **Database**: MySQL connection settings
-- **Telegram Bot**: Token and webhook settings
-- **Development Mode**: Polling instead of webhook for local development
-
-## Environment Variables
-
-You can override settings using environment variables:
-
-```bash
-export PORT=3001
-export DB_HOST=localhost
-export TELEGRAM_BOT_TOKEN=your_token
-npm run dev
-```
+### Key Files
+- `config/database.js` - Database connection and operations
+- `api/bot-stats.js` - Bot statistics API
+- `api/sync-status.js` - Sync status API
+- `server-optimized.js` - Main Express server
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Error**
-   - Ensure MySQL is running
-   - Check database credentials in `config.local.js`
-   - Verify database exists
+1. **MongoDB Connection Failed**
+   - Check if MongoDB is running
+   - Verify connection string in `.env`
+   - Ensure network connectivity
 
-2. **Telegram Bot Not Responding**
-   - Verify bot token is correct
-   - Check if bot is enabled
-   - For local development, use polling mode (webhook disabled)
+2. **Sync Issues**
+   - Run `/syncstatus` in bot to check status
+   - Use `/sync` command to force synchronization
+   - Check database permissions
 
 3. **Port Already in Use**
-   - Change port in `config.local.js`
-   - Or kill process using the port
+   - Change PORT in `.env`
+   - Kill existing process: `lsof -ti:3000 | xargs kill`
 
-### Memory Issues
+### Logs
+- Check console output for detailed error messages
+- MongoDB connection logs show sync status
+- API endpoints log request/response data
 
-If you encounter memory allocation errors:
-- Increase Node.js memory limit: `node --max-old-space-size=4096 dev-server.js`
-- Or use the debug script: `npm run dev:debug`
+## Security
 
-## Production vs Development
-
-- **Development**: Uses polling for Telegram bot updates
-- **Production**: Uses webhook for better performance
-- **Local**: Runs on localhost:3000
-- **Production**: Configured for external domain
-
-## File Structure
-
-```
-├── server.js          # Main application (bundled)
-├── dev-server.js      # Development wrapper
-├── config.local.js    # Local configuration
-├── package.json       # Dependencies and scripts
-├── views/            # EJS templates
-├── public/           # Static assets
-└── README.md         # This file
-```
+- Environment variables for sensitive data
+- Input validation and sanitization
+- Rate limiting on API endpoints
+- CORS configuration for cross-origin requests
 
 ## Support
 
 For issues and questions:
-- Email: mirzaglitch@gmail.com
-- Telegram: @mirzaGlitch
+- Check the troubleshooting section
+- Review MongoDB connection settings
+- Verify environment variables
+- Test sync commands in bot
+
+## License
+
+This project is part of the OTP Bot system.

@@ -7,13 +7,16 @@ from typing import Optional, Dict, Any, List
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 import logging
+from contextlib import asynccontextmanager
+from src.utils.cache_manager import cached
 
 logger = logging.getLogger(__name__)
 
 class UserDatabase:
-    """Database handler for user operations"""
+    """Database handler for user operations with connection pooling"""
     _instance = None
     _initialized = False
+    _connection_pool = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -21,13 +24,16 @@ class UserDatabase:
             cls._instance.client: Optional[AsyncIOMotorClient] = None
             cls._instance.db = None
             cls._instance.users_collection = None
+            cls._instance._max_pool_size = 10
+            cls._instance._min_pool_size = 1
+            cls._instance._max_idle_time_ms = 30000
         return cls._instance
     
     def __init__(self):
         pass
     
     async def initialize(self):
-        """Initialize database connection"""
+        """Initialize database connection with connection pooling"""
         if self._initialized and self.client:
             return
             
@@ -35,24 +41,71 @@ class UserDatabase:
             from src.config.bot_config import BotConfig
             config = BotConfig()
             
-            logger.info(f"🔗 Connecting to MongoDB...")
+            logger.info(f"🔗 Connecting to MongoDB with connection pooling...")
             
-            self.client = AsyncIOMotorClient(config.MONGODB_URI)
+            # Create client with connection pooling settings
+            self.client = AsyncIOMotorClient(
+                config.MONGODB_URI,
+                maxPoolSize=self._max_pool_size,
+                minPoolSize=self._min_pool_size,
+                maxIdleTimeMS=self._max_idle_time_ms,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=10000,
+                socketTimeoutMS=10000
+            )
+            
             self.db = self.client[config.MONGODB_DATABASE]
             self.users_collection = self.db[config.MONGODB_COLLECTION]
             
-            # Test connection
-            await self.client.admin.command('ping')
-            logger.info("✅ MongoDB connected successfully!")
+            # Test connection with timeout
+            await asyncio.wait_for(
+                self.client.admin.command('ping'),
+                timeout=5.0
+            )
+            
+            logger.info("✅ MongoDB connected successfully with connection pooling!")
             self._initialized = True
             
+        except asyncio.TimeoutError:
+            logger.error("❌ MongoDB connection timeout")
+            raise
         except Exception as e:
             logger.error(f"❌ Failed to connect to MongoDB: {e}")
             raise
     
-    async def get_or_create_user(self, user_id: int, username: str = None, first_name: str = None) -> Dict[str, Any]:
-        """Get user from database or create if not exists"""
+    @asynccontextmanager
+    async def get_connection(self):
+        """Context manager for database connections"""
+        if not self._initialized:
+            await self.initialize()
+        
         try:
+            yield self.client
+        except Exception as e:
+            logger.error(f"Database connection error: {e}")
+            raise
+    
+    async def _ensure_connection(self):
+        """Ensure database connection is available"""
+        if not self._initialized or not self.client:
+            await self.initialize()
+        
+        # Test connection
+        try:
+            await asyncio.wait_for(
+                self.client.admin.command('ping'),
+                timeout=2.0
+            )
+        except (asyncio.TimeoutError, Exception):
+            logger.warning("Database connection lost, reconnecting...")
+            await self.initialize()
+    
+    @cached(ttl=300, key_prefix="user")
+    async def get_or_create_user(self, user_id: int, username: str = None, first_name: str = None) -> Dict[str, Any]:
+        """Get user from database or create if not exists with connection management and caching"""
+        try:
+            await self._ensure_connection()
+            
             user = await self.users_collection.find_one({"user_id": user_id})
             
             if not user:
@@ -495,17 +548,21 @@ class UserDatabase:
             logger.error(f"❌ Error using promocode: {e}")
             return {"valid": False, "message": "Error processing promocode"}
 
+    @cached(ttl=60, key_prefix="services")
     async def get_services(self) -> List[Dict[str, Any]]:
-        """Get all services from the website's MongoDB"""
+        """Get all services from the website's MongoDB with caching"""
         try:
             # Ensure database is initialized
             if not self._initialized:
                 await self.initialize()
             
             logger.info("🔍 Fetching services from database...")
+            logger.info(f"🔍 Database connection status: {self.client is not None}")
+            logger.info(f"🔍 Database name: {self.db.name}")
             
             # Use existing database connection but different collection
             services_collection = self.db['services']
+            logger.info(f"🔍 Services collection: {services_collection}")
             
             # First, let's check if the collection exists and has any documents
             total_services = await services_collection.count_documents({})
@@ -517,31 +574,56 @@ class UserDatabase:
             
             logger.info(f"📦 Found {len(all_services)} total services")
             
-            # Log all services for debugging
+            # Debug: Print each service
             for i, service in enumerate(all_services):
-                logger.info(f"📦 Service {i+1}: {service.get('name', 'Unknown')} - {service.get('price', '₹0')} - Server: {service.get('server_name', 'Unknown')}")
+                logger.info(f"🔍 Service {i+1}:")
+                logger.info(f"  - ID: {service.get('_id')}")
+                logger.info(f"  - Name: {service.get('name')}")
+                logger.info(f"  - Description: {service.get('description')}")
+                logger.info(f"  - Price: {service.get('price')}")
+                logger.info(f"  - Server Name: {service.get('server_name')}")
+                logger.info(f"  - Is Active: {service.get('is_active')}")
+                logger.info(f"  - Full service data: {service}")
             
             # Filter for active services if the field exists
             active_services = []
             for service in all_services:
                 # Check if service is active (default to True if field doesn't exist)
                 is_active = service.get("is_active", True)
+                logger.info(f"🔍 Service '{service.get('name', 'Unknown')}' active status: {is_active}")
                 if is_active:
                     active_services.append(service)
+                    logger.info(f"  - ✅ Added to active services")
+                else:
+                    logger.info(f"  - ❌ Skipped (inactive)")
             
             logger.info(f"✅ Found {len(active_services)} active services")
             
             # Format services for bot
             formatted_services = []
             for service in active_services:
+                service_id = str(service.get("_id"))
+                service_name = service.get("name", "Unknown Service")
+                service_desc = service.get("description", "No description available")
+                service_price = service.get("price", "₹0")
+                service_server = service.get("server_name", "Unknown Server")
+                
+                logger.info(f"🔍 Formatting service: {service_name}")
+                logger.info(f"  - ID: {service_id}")
+                logger.info(f"  - Name: {service_name}")
+                logger.info(f"  - Description: {service_desc}")
+                logger.info(f"  - Price: {service_price}")
+                logger.info(f"  - Server: {service_server}")
+                
                 formatted_service = {
-                    "id": str(service.get("_id")),
-                    "name": service.get("name", "Unknown Service"),
-                    "description": service.get("description", "No description available"),
-                    "price": service.get("price", "₹0"),
-                    "server": service.get("server_name", "Unknown Server")
+                    "id": service_id,
+                    "name": service_name,
+                    "description": service_desc,
+                    "price": service_price,
+                    "server": service_server
                 }
                 formatted_services.append(formatted_service)
+                logger.info(f"  - ✅ Formatted service added")
             
             logger.info(f"✅ Formatted {len(formatted_services)} services for bot display")
             
@@ -566,11 +648,109 @@ class UserDatabase:
                 
                 logger.info(f"✅ Added {len(formatted_services)} sample services")
             
+            logger.info(f"🔍 Final formatted services: {formatted_services}")
             return formatted_services
             
         except Exception as e:
             logger.error(f"❌ Error fetching services: {e}")
+            import traceback
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
             return []
+
+    async def get_service_by_id(self, service_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific service by ID"""
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            logger.info(f"🔍 Fetching service with ID: {service_id}")
+            
+            # Use existing database connection but different collection
+            services_collection = self.db['services']
+            
+            # Import ObjectId for MongoDB query
+            from bson import ObjectId
+            
+            try:
+                # Convert string ID to ObjectId
+                object_id = ObjectId(service_id)
+                
+                # Find the service
+                service = await services_collection.find_one({"_id": object_id})
+                
+                if service:
+                    logger.info(f"✅ Found service: {service.get('name', 'Unknown')}")
+                    
+                    # Format service for bot
+                    formatted_service = {
+                        "id": str(service.get("_id")),
+                        "name": service.get("name", "Unknown Service"),
+                        "description": service.get("description", "No description available"),
+                        "price": service.get("price", "₹0"),
+                        "server": service.get("server_name", "Unknown Server"),
+                        "service_id": service.get("service_id", ""),
+                        "code": service.get("code", ""),
+                        "cancel_disable": service.get("cancel_disable", "5"),
+                        "is_active": service.get("is_active", True)
+                    }
+                    
+                    return formatted_service
+                else:
+                    logger.warning(f"⚠️ Service not found with ID: {service_id}")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"❌ Error converting service ID {service_id}: {e}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Error fetching service by ID {service_id}: {e}")
+            return None
+
+    async def add_transaction(self, user_id: int, transaction: Dict[str, Any]):
+        """Add a transaction to user's history"""
+        try:
+            logger.info(f"📝 Adding transaction for user {user_id}")
+            
+            # Add transaction to user's transaction history
+            result = await self.users_collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$push": {"transaction_history": transaction},
+                    "$set": {"updated_at": datetime.utcnow()}
+                }
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"✅ Transaction added for user {user_id}")
+            else:
+                logger.warning(f"⚠️ No user found to add transaction for user {user_id}")
+                
+        except Exception as e:
+            logger.error(f"❌ Error adding transaction for user {user_id}: {e}")
+
+    async def update_user_stats(self, user_id: int, amount: float):
+        """Update user statistics after purchase"""
+        try:
+            logger.info(f"📊 Updating stats for user {user_id}")
+            
+            # Update total purchased amount
+            result = await self.users_collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$inc": {"total_purchased": amount},
+                    "$set": {"updated_at": datetime.utcnow()}
+                }
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"✅ Stats updated for user {user_id}")
+            else:
+                logger.warning(f"⚠️ No user found to update stats for user {user_id}")
+                
+        except Exception as e:
+            logger.error(f"❌ Error updating stats for user {user_id}: {e}")
 
     async def add_sample_services(self):
         """Add sample services for testing"""
@@ -630,3 +810,206 @@ class UserDatabase:
             
         except Exception as e:
             logger.error(f"❌ Error adding sample services: {e}")
+
+    async def sync_user_data_with_website(self, user_id: int) -> bool:
+        """
+        Sync user data with website database to ensure consistency
+        
+        Args:
+            user_id: User ID to sync
+            
+        Returns:
+            bool: True if sync successful, False otherwise
+        """
+        try:
+            logger.info(f"🔄 Syncing user data for user {user_id} with website...")
+            
+            # Get user data from bot database
+            user = await self.users_collection.find_one({"user_id": user_id})
+            if not user:
+                logger.warning(f"⚠️ User {user_id} not found in bot database")
+                return False
+            
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            # Sync with website's users collection (if different from bot's)
+            website_users_collection = self.db['website_users']
+            
+            # Prepare user data for website
+            website_user_data = {
+                "user_id": user["user_id"],
+                "username": user.get("username"),
+                "first_name": user.get("first_name"),
+                "balance": user.get("balance", 0.0),
+                "total_purchased": user.get("total_purchased", 0),
+                "total_used": user.get("total_used", 0),
+                "banned": user.get("banned", False),
+                "created_at": user.get("created_at"),
+                "updated_at": datetime.utcnow(),
+                "last_sync": datetime.utcnow()
+            }
+            
+            # Upsert user data in website collection
+            result = await website_users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": website_user_data},
+                upsert=True
+            )
+            
+            if result.modified_count > 0 or result.upserted_id:
+                logger.info(f"✅ User {user_id} data synced with website successfully")
+                return True
+            else:
+                logger.warning(f"⚠️ No changes made during sync for user {user_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error syncing user {user_id} data with website: {e}")
+            return False
+
+    async def sync_all_users_with_website(self) -> Dict[str, Any]:
+        """
+        Sync all users data with website database
+        
+        Returns:
+            dict: Sync results with counts
+        """
+        try:
+            logger.info("🔄 Starting full user data sync with website...")
+            
+            # Get all users from bot database
+            cursor = self.users_collection.find({})
+            all_users = await cursor.to_list(length=None)
+            
+            if not all_users:
+                logger.info("ℹ️ No users found in bot database")
+                return {"success": True, "total_users": 0, "synced_users": 0, "failed_users": 0}
+            
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            # Sync with website's users collection
+            website_users_collection = self.db['website_users']
+            
+            synced_count = 0
+            failed_count = 0
+            
+            for user in all_users:
+                try:
+                    # Prepare user data for website
+                    website_user_data = {
+                        "user_id": user["user_id"],
+                        "username": user.get("username"),
+                        "first_name": user.get("first_name"),
+                        "balance": user.get("balance", 0.0),
+                        "total_purchased": user.get("total_purchased", 0),
+                        "total_used": user.get("total_used", 0),
+                        "banned": user.get("banned", False),
+                        "created_at": user.get("created_at"),
+                        "updated_at": datetime.utcnow(),
+                        "last_sync": datetime.utcnow()
+                    }
+                    
+                    # Upsert user data
+                    result = await website_users_collection.update_one(
+                        {"user_id": user["user_id"]},
+                        {"$set": website_user_data},
+                        upsert=True
+                    )
+                    
+                    if result.modified_count > 0 or result.upserted_id:
+                        synced_count += 1
+                    else:
+                        failed_count += 1
+                        
+                except Exception as e:
+                    logger.error(f"❌ Error syncing user {user.get('user_id')}: {e}")
+                    failed_count += 1
+            
+            logger.info(f"✅ Full sync completed: {synced_count} synced, {failed_count} failed out of {len(all_users)} total")
+            
+            return {
+                "success": True,
+                "total_users": len(all_users),
+                "synced_users": synced_count,
+                "failed_users": failed_count
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Error during full user sync: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "total_users": 0,
+                "synced_users": 0,
+                "failed_users": 0
+            }
+
+    async def get_website_user_data(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get user data from website database
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            dict: User data from website or None if not found
+        """
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            # Get from website's users collection
+            website_users_collection = self.db['website_users']
+            user = await website_users_collection.find_one({"user_id": user_id})
+            
+            return user
+            
+        except Exception as e:
+            logger.error(f"❌ Error getting website user data for {user_id}: {e}")
+            return None
+
+    async def update_website_user_balance(self, user_id: int, new_balance: float) -> bool:
+        """
+        Update user balance in website database
+        
+        Args:
+            user_id: User ID
+            new_balance: New balance amount
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Ensure database is initialized
+            if not self._initialized:
+                await self.initialize()
+            
+            # Update in website's users collection
+            website_users_collection = self.db['website_users']
+            
+            result = await website_users_collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "balance": new_balance,
+                        "updated_at": datetime.utcnow(),
+                        "last_sync": datetime.utcnow()
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"✅ Updated balance for user {user_id} in website database: {new_balance}")
+                return True
+            else:
+                logger.warning(f"⚠️ No user found to update balance for user {user_id} in website database")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error updating website user balance for {user_id}: {e}")
+            return False

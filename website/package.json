@@ -2,19 +2,20 @@
 	"name": "rental-otp-bot",
 	"version": "1.0.0",
 	"description": "Telegram OTP Bot for local development",
-	"main": "vercel-server-simple.js",
+	"main": "server-optimized.js",
 	"scripts": {
-		"start": "node vercel-server-simple.js",
+		"start": "node server-optimized.js",
 		"vercel-build": "echo 'Build completed'",
-		"pm2:start": "pm2 start server.js --name my-tg-bot --output logs.txt --error errors.txt --log-date-format \"YYYY-MM-DD HH:mm:ss Z\" --time",
+		"pm2:start": "pm2 start server-optimized.js --name my-tg-bot --output logs.txt --error errors.txt --log-date-format \"YYYY-MM-DD HH:mm:ss Z\" --time",
 		"pm2:stop": "pm2 stop my-tg-bot",
 		"pm2:restart": "pm2 restart my-tg-bot",
 		"dev": "node dev-server.js",
 		"dev:debug": "node --inspect dev-server.js",
-		"dev:nodemon": "nodemon dev-server.js",
+		"dev:nodemon": "nodemon server-optimized.js",
 		"simple": "node simple-server.js",
 		"simple:debug": "node --inspect simple-server.js",
-		"simple:dev": "node simple-dev-server.js"
+		"simple:dev": "node simple-dev-server.js",
+		"optimized": "node server-optimized.js"
 	},
 	"keywords": [
 		"telegram",
@@ -26,13 +27,14 @@
 	"license": "ISC",
 	"dependencies": {
 		"body-parser": "^1.20.2",
-		"dotenv": "^16.3.1",
+		"dotenv": "^16.6.1",
 		"ejs": "^3.1.9",
 		"express": "^4.18.2",
 		"express-rate-limit": "^7.1.5",
 		"helmet": "^7.1.0",
 		"mongodb": "^6.18.0",
-		"pm2": "^5.3.1"
+		"pm2": "^5.3.1",
+		"tailwindcss": "^4.1.12"
 	},
 	"devDependencies": {
 		"nodemon": "^3.0.1"

@@ -150,11 +150,8 @@
       try {
         // Get backend URL
         function getBackendUrl() {
-          if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            return window.location.origin;
-          } else {
-            return 'http://localhost:3001';
-          }
+          // Always use the same origin to avoid CORS issues
+          return window.location.origin;
         }
 
         const backendUrl = getBackendUrl();

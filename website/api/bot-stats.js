@@ -1,13 +1,21 @@
 const { MongoClient } = require('mongodb');
+require('dotenv').config();
 
-// Use the same MongoDB connection as the bot
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://vishalgiri0044:kR9oUspxQUtYdund@cluster0.zdudgbg.mongodb.net/otp_bot?retryWrites=true&w=majority&appName=Cluster0';
+// Use the same MongoDB connection as the bot and website
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/otp_bot';
 const MONGODB_DATABASE = process.env.MONGODB_DATABASE || 'otp_bot';
 const MONGODB_COLLECTION = process.env.MONGODB_COLLECTION || 'users';
 
 async function connectToBotDatabase() {
   try {
-    const client = new MongoClient(MONGODB_URI);
+    const client = new MongoClient(MONGODB_URI, {
+      maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE) || 10,
+      minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE) || 1,
+      maxIdleTimeMS: parseInt(process.env.DB_MAX_IDLE_TIME_MS) || 30000,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT_MS) || 10000,
+      socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT_MS) || 10000
+    });
     await client.connect();
     const db = client.db(MONGODB_DATABASE);
     console.log('✅ Connected to bot MongoDB successfully');

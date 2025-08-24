@@ -37,7 +37,11 @@ async def handle_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message += "👉 User SMM service History - /smm_history 1980442239\n"
         message += "👉 Ban User - /ban 1980442239\n"
         message += "👉 Unban User - /unban 1980442239\n"
-        message += "👉 Broadcast a message - /broadcast hello everyone\n\n"
+        message += "👉 Broadcast a message - /broadcast hello everyone\n"
+        message += "👉 Sync Data with Website - /sync\n"
+        message += "👉 Sync Users Only - /syncusers\n"
+        message += "👉 Sync Services Only - /syncservices\n"
+        message += "👉 Check Sync Status - /syncstatus\n\n"
         message += "⚠️ Remember to replace 1980442239 with actual user id."
         
         # Create admin keyboard with Web App buttons

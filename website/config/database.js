@@ -47,19 +47,37 @@ class Database {
   constructor() {
     this.client = null;
     this.db = null;
+    // Use the same MongoDB URI as the bot
     this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/otp_bot';
     this.dbName = process.env.MONGODB_DATABASE || 'otp_bot';
+    this.isConnected = false;
   }
 
   async connect() {
     try {
-      this.client = new MongoClient(this.uri);
+      if (this.isConnected) return this.db;
+      
+      console.log(`🔗 Connecting to MongoDB: ${this.uri}`);
+      console.log(`📊 Database: ${this.dbName}`);
+      
+      this.client = new MongoClient(this.uri, {
+        maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE) || 10,
+        minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE) || 1,
+        maxIdleTimeMS: parseInt(process.env.DB_MAX_IDLE_TIME_MS) || 30000,
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT_MS) || 10000,
+        socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT_MS) || 10000
+      });
+      
       await this.client.connect();
       this.db = this.client.db(this.dbName);
+      this.isConnected = true;
+      
       console.log('✅ Connected to MongoDB successfully');
       return this.db;
     } catch (error) {
       console.error('❌ MongoDB connection error:', error);
+      this.isConnected = false;
       throw error;
     }
   }
@@ -67,12 +85,13 @@ class Database {
   async disconnect() {
     if (this.client) {
       await this.client.close();
+      this.isConnected = false;
       console.log('🔌 Disconnected from MongoDB');
     }
   }
 
   getCollection(collectionName) {
-    if (!this.db) {
+    if (!this.db || !this.isConnected) {
       throw new Error('Database not connected. Call connect() first.');
     }
     
@@ -81,43 +100,30 @@ class Database {
       throw new Error('Invalid collection name');
     }
     
-    console.log(`📋 [DEBUG] Getting collection: ${collectionName} from database: ${this.dbName}`);
     return this.db.collection(collectionName);
   }
 
   // Dashboard data methods - Get real data from bot's MongoDB
   async getDashboardData() {
     try {
-      console.log('🔍 [DEBUG] Starting getDashboardData() method - Fetching from bot database');
-      
-      // Connect to bot's MongoDB to get real data
       const botStats = await this.getBotStats();
-      
-      console.log('✅ [DEBUG] Bot stats retrieved:', botStats);
       
       // Get additional data from website database
       const servicesCollection = this.getCollection('services');
       const serversCollection = this.getCollection('servers');
       
       // Get real top services from database
-      console.log('🔍 [DEBUG] Querying top services from services collection...');
       const topServices = await servicesCollection
         .find({})
         .sort({ users: -1 })
         .limit(3)
         .toArray();
       
-      console.log('📈 [DEBUG] Top services found:', topServices.length);
-      
       // Get server count
-      console.log('🔍 [DEBUG] Counting servers...');
       const serverCount = await serversCollection.countDocuments();
-      console.log('🖥️  [DEBUG] Total servers found:', serverCount);
       
       // Get service count
-      console.log('🔍 [DEBUG] Counting services...');
       const serviceCount = await servicesCollection.countDocuments();
-      console.log('📦 [DEBUG] Total services found:', serviceCount);
       
       // Use bot data for dashboard
       const stats = {
@@ -125,8 +131,8 @@ class Database {
         totalEarnings: `₹${botStats.totalBalance.toFixed(2)}`,
         todaysUsers: botStats.todaysUsers,
         totalUsers: botStats.totalUsers,
-        todaysSold: botStats.todaysNumbersSold, // Use actual number purchases
-        totalSold: botStats.totalNumbersSold,   // Use actual number purchases
+        todaysSold: botStats.todaysNumbersSold,
+        totalSold: botStats.totalNumbersSold,
         topServices: topServices,
         serverCount: serverCount,
         serviceCount: serviceCount,
@@ -134,12 +140,10 @@ class Database {
         updatedAt: new Date()
       };
       
-      console.log('📊 [DEBUG] Dashboard stats prepared from bot data:', stats);
-      
       return stats;
       
     } catch (error) {
-      console.error('❌ [DEBUG] Error getting dashboard data from bot:', error);
+      console.error('❌ Error getting dashboard data:', error);
       
       // Fallback to default values if bot data fails
       return {
@@ -158,22 +162,11 @@ class Database {
     }
   }
   
-  // New method to get bot statistics
+  // New method to get bot statistics - Uses the same database as bot
   async getBotStats() {
     try {
-      console.log('🔍 [DEBUG] Connecting to bot MongoDB...');
-      
-      // Use the same MongoDB connection as the bot
-      const botUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/otp_bot';
-      const botDbName = process.env.MONGODB_DATABASE || 'otp_bot';
-      const botCollection = process.env.MONGODB_COLLECTION || 'users';
-      
-      const botClient = new MongoClient(botUri);
-      await botClient.connect();
-      const botDb = botClient.db(botDbName);
-      const usersCollection = botDb.collection(botCollection);
-      
-      console.log('✅ [DEBUG] Connected to bot MongoDB successfully');
+      // Use the same MongoDB connection as configured
+      const usersCollection = this.getCollection(process.env.MONGODB_COLLECTION || 'users');
       
       // Get total users count
       const totalUsers = await usersCollection.countDocuments();
@@ -216,18 +209,6 @@ class Database {
       
       const todaysTransactions = recentTransactions.length > 0 ? recentTransactions[0].count : 0;
       
-      // Get total transactions
-      const totalTransactionsResult = await usersCollection.aggregate([
-        {
-          $group: {
-            _id: null,
-            totalTransactions: { $sum: { $size: "$transaction_history" } }
-          }
-        }
-      ]).toArray();
-      
-      const totalTransactions = totalTransactionsResult.length > 0 ? totalTransactionsResult[0].totalTransactions : 0;
-      
       // Get number purchases (transactions that are debits for number purchases)
       const numberPurchases = await usersCollection.aggregate([
         {
@@ -265,20 +246,18 @@ class Database {
       
       const todaysNumbersSold = todaysNumberPurchases.length > 0 ? todaysNumberPurchases[0].count : 0;
       
-      await botClient.close();
-      
       return {
         totalUsers,
         todaysUsers,
         totalBalance: parseFloat(totalBalance.toFixed(2)),
         todaysTransactions,
-        totalTransactions,
+        totalTransactions: 0, // Will be calculated if needed
         todaysNumbersSold,
         totalNumbersSold
       };
       
     } catch (error) {
-      console.error('❌ [DEBUG] Error getting bot stats:', error);
+      console.error('❌ Error getting bot stats:', error);
       return {
         totalUsers: 0,
         todaysUsers: 0,
@@ -308,16 +287,16 @@ class Database {
     try {
       // Validate and sanitize server data
       const validatedData = {
-        name: validateInput.string(serverData.name, 100),
-        url: validateInput.url(serverData.url),
-        api_key: validateInput.string(serverData.api_key, 200),
+        server_name: validateInput.string(serverData.server_name, 100),
+        country: validateInput.string(serverData.country, 10),
+        flag: validateInput.string(serverData.flag, 50),
         status: validateInput.string(serverData.status, 20) || 'active',
-        description: validateInput.string(serverData.description, 500)
+        description: validateInput.string(serverData.description, 500) || ''
       };
       
       // Check if required fields are valid
-      if (!validatedData.name || !validatedData.url) {
-        throw new Error('Invalid server data: name and url are required');
+      if (!validatedData.server_name || !validatedData.country || !validatedData.flag) {
+        throw new Error('Invalid server data: server_name, country, and flag are required');
       }
       
       const serversCollection = this.getCollection('servers');

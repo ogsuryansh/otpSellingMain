@@ -5,6 +5,7 @@ Callback Query Handler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
+from datetime import datetime
 
 from src.utils.keyboard_utils import create_main_keyboard, create_back_keyboard, create_services_keyboard, create_payment_keyboard, create_balance_keyboard, create_transactions_keyboard
 
@@ -13,8 +14,12 @@ logger = logging.getLogger(__name__)
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle callback queries from inline keyboards"""
     try:
+        logger.info("🎯 CALLBACK HANDLER TRIGGERED!")
         query = update.callback_query
         callback_data = query.data
+        
+        logger.info(f"🔍 DEBUG: Callback data: {callback_data}")
+        logger.info(f"🔍 DEBUG: From user: {update.effective_user.id}")
         
         # Answer callback immediately for better UX
         await query.answer()
@@ -56,6 +61,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await handle_transaction_history(update, context)
         elif callback_data == "number_history":
             await handle_number_history(update, context)
+        # Service selection callback handlers
+        elif callback_data.startswith("service_"):
+            await handle_service_selection(update, context)
+        # Purchase callback handlers
+        elif callback_data.startswith("purchase_"):
+            await handle_purchase_service(update, context)
+        # Server callback handlers
+        elif callback_data.startswith("srv:"):
+            await handle_server_callback(update, context)
         # Admin callback handlers
         elif callback_data.startswith("admin_"):
             await handle_admin_callback(update, context)
@@ -98,26 +112,38 @@ async def handle_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Create services list message
         message = f"📦 <b>Available Services</b>\n\n"
         message += f"✅ Found {len(services)} services\n\n"
+        message += "🔽 <b>Choose a service below:</b>\n\n"
         
-        # Add each service to the message
-        for i, service in enumerate(services[:10], 1):  # Show first 10 services
-            message += f"{i}. <b>{service['name']}</b>\n"
-            message += f"   📝 {service['description']}\n\n"
+        # Create interactive keyboard with service buttons
+        keyboard = []
         
-        if len(services) > 10:
-            message += f"... and {len(services) - 10} more services\n\n"
+        # Add service buttons (limit to 8 services per page for better UX)
+        for i, service in enumerate(services[:8], 1):
+            service_name = service.get('name', f'Service {i}')
+            service_price = service.get('price', '₹0')
+            service_server = service.get('server', 'Unknown Server')
+            service_id = service.get('id', str(i))
+            
+            logger.info(f"🔧 Creating button for service: {service_name} (ID: {service_id}) on server: {service_server}")
+            
+            # Create button text with server information
+            button_text = f"{service_name} - {service_price} ({service_server})"
+            
+            keyboard.append([
+                InlineKeyboardButton(
+                    button_text, 
+                    callback_data=f"service_{service_id}"
+                )
+            ])
         
-        message += "💡 <b>To use inline search:</b>\n"
-        message += "1. Type @YourBotName in any chat\n"
-        message += "2. Search for services by name\n"
-        message += "3. Click on any service to view details"
+        # Add back button
+        keyboard.append([InlineKeyboardButton("« Back", callback_data="back_to_main")])
         
-        # Create keyboard with back button
-        keyboard = create_back_keyboard()
+        logger.info(f"🎯 Created keyboard with {len(keyboard)-1} service buttons")
         
         await query.edit_message_text(
             text=message,
-            reply_markup=keyboard,
+            reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='HTML'
         )
         
@@ -125,6 +151,221 @@ async def handle_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"❌ Error in handle_services: {e}")
         await query.edit_message_text(
             text="❌ Error loading services. Please try again later.",
+            reply_markup=create_back_keyboard()
+        )
+
+async def handle_service_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle service selection from user"""
+    query = update.callback_query
+    user = query.from_user
+    
+    try:
+        logger.info(f"🔍 Service selection triggered by user {user.id}")
+        
+        # Extract service ID from callback data
+        callback_data = query.data
+        service_id = callback_data.replace("service_", "")
+        
+        logger.info(f"🎯 Selected service ID: {service_id}")
+        
+        # Get service details from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        logger.info(f"🔍 Fetching service details for ID: {service_id}")
+        service = await user_db.get_service_by_id(service_id)
+        
+        if not service:
+            logger.error(f"❌ Service not found with ID: {service_id}")
+            await query.edit_message_text(
+                text="❌ Service not found. Please try again.",
+                reply_markup=create_back_keyboard()
+            )
+            return
+        
+        logger.info(f"✅ Found service: {service.get('name', 'Unknown')}")
+        
+        # Get user data to check balance
+        user_data = await user_db.get_or_create_user(
+            user_id=user.id,
+            username=user.username,
+            first_name=user.first_name
+        )
+        
+        user_balance = user_data.get("balance", 0.0)
+        service_price = float(service.get('price', '0').replace('₹', ''))
+        
+        logger.info(f"💰 User balance: {user_balance}, Service price: {service_price}")
+        
+        # Create service details message
+        message = f"📦 <b>Service Details</b>\n\n"
+        message += f"🔹 <b>Name:</b> {service.get('name', 'Unknown')}\n"
+        message += f"🔹 <b>Description:</b> {service.get('description', 'No description')}\n"
+        message += f"🔹 <b>Price:</b> {service.get('price', '₹0')}\n"
+        message += f"🔹 <b>Server:</b> {service.get('server', 'Unknown')}\n\n"
+        message += f"💰 <b>Your Balance:</b> {user_balance:.2f} 💎\n"
+        
+        # Check if user has sufficient balance
+        if user_balance >= service_price:
+            message += f"✅ <b>Status:</b> Sufficient balance\n\n"
+            message += "🎯 <b>Ready to purchase!</b>"
+            
+            # Create purchase keyboard
+            keyboard = [
+                [InlineKeyboardButton("🛒 Purchase Now", callback_data=f"purchase_{service_id}")],
+                [InlineKeyboardButton("« Back to Services", callback_data="services")],
+                [InlineKeyboardButton("« Main Menu", callback_data="back_to_main")]
+            ]
+        else:
+            message += f"❌ <b>Status:</b> Insufficient balance\n\n"
+            message += f"💡 You need {service_price - user_balance:.2f} more 💎 to purchase this service."
+            
+            # Create recharge keyboard
+            keyboard = [
+                [InlineKeyboardButton("💳 Recharge Balance", callback_data="recharge")],
+                [InlineKeyboardButton("« Back to Services", callback_data="services")],
+                [InlineKeyboardButton("« Main Menu", callback_data="back_to_main")]
+            ]
+        
+        logger.info(f"📝 Sending service details to user {user.id}")
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error in handle_service_selection: {e}")
+        import traceback
+        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+        
+        await query.edit_message_text(
+            text="❌ Error loading service details. Please try again later.",
+            reply_markup=create_back_keyboard()
+        )
+
+async def handle_purchase_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle service purchase"""
+    query = update.callback_query
+    user = query.from_user
+    
+    try:
+        logger.info(f"🛒 Purchase triggered by user {user.id}")
+        
+        # Extract service ID from callback data
+        callback_data = query.data
+        service_id = callback_data.replace("purchase_", "")
+        
+        logger.info(f"🎯 Purchase service ID: {service_id}")
+        
+        # Get service details from database
+        from src.database.user_db import UserDatabase
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        logger.info(f"🔍 Fetching service details for purchase: {service_id}")
+        service = await user_db.get_service_by_id(service_id)
+        
+        if not service:
+            logger.error(f"❌ Service not found for purchase: {service_id}")
+            await query.edit_message_text(
+                text="❌ Service not found. Please try again.",
+                reply_markup=create_back_keyboard()
+            )
+            return
+        
+        logger.info(f"✅ Found service for purchase: {service.get('name', 'Unknown')}")
+        
+        # Get user data to check balance
+        user_data = await user_db.get_or_create_user(
+            user_id=user.id,
+            username=user.username,
+            first_name=user.first_name
+        )
+        
+        user_balance = user_data.get("balance", 0.0)
+        service_price = float(service.get('price', '0').replace('₹', ''))
+        
+        logger.info(f"💰 Purchase check - User balance: {user_balance}, Service price: {service_price}")
+        
+        # Check if user has sufficient balance
+        if user_balance < service_price:
+            logger.warning(f"❌ Insufficient balance for user {user.id}")
+            message = f"❌ <b>Insufficient Balance</b>\n\n"
+            message += f"💰 Your balance: {user_balance:.2f} 💎\n"
+            message += f"💳 Service price: {service_price:.2f} 💎\n"
+            message += f"💡 You need {service_price - user_balance:.2f} more 💎"
+            
+            keyboard = [
+                [InlineKeyboardButton("💳 Recharge Balance", callback_data="recharge")],
+                [InlineKeyboardButton("« Back to Services", callback_data="services")],
+                [InlineKeyboardButton("« Main Menu", callback_data="back_to_main")]
+            ]
+            
+            await query.edit_message_text(
+                text=message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='HTML'
+            )
+            return
+        
+        # Process the purchase
+        logger.info(f"✅ Processing purchase for user {user.id}")
+        
+        # Deduct balance
+        new_balance = user_balance - service_price
+        await user_db.update_user_balance(user_id, -service_price)
+        
+        # Add transaction record
+        transaction = {
+            "type": "debit",
+            "amount": service_price,
+            "reason": f"Service purchase: {service.get('name', 'Unknown')}",
+            "closing_balance": new_balance,
+            "created_at": datetime.utcnow()
+        }
+        
+        await user_db.add_transaction(user_id, transaction)
+        
+        # Update user stats
+        await user_db.update_user_stats(user_id, service_price)
+        
+        logger.info(f"✅ Purchase completed for user {user.id}")
+        
+        # Send success message
+        message = f"🎉 <b>Purchase Successful!</b>\n\n"
+        message += f"📦 <b>Service:</b> {service.get('name', 'Unknown')}\n"
+        message += f"💰 <b>Price:</b> {service.get('price', '₹0')}\n"
+        message += f"💳 <b>New Balance:</b> {new_balance:.2f} 💎\n\n"
+        message += f"✅ Your service has been activated!\n\n"
+        message += f"📞 <b>Next Steps:</b>\n"
+        message += f"1. You will receive the service details shortly\n"
+        message += f"2. Check your transaction history for details\n"
+        message += f"3. Contact support if you need help"
+        
+        keyboard = [
+            [InlineKeyboardButton("📋 Transaction History", callback_data="transactions")],
+            [InlineKeyboardButton("🛒 Buy More Services", callback_data="services")],
+            [InlineKeyboardButton("« Main Menu", callback_data="back_to_main")]
+        ]
+        
+        await query.edit_message_text(
+            text=message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Error in handle_purchase_service: {e}")
+        import traceback
+        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+        
+        await query.edit_message_text(
+            text="❌ Error processing purchase. Please try again later.",
             reply_markup=create_back_keyboard()
         )
 
@@ -961,6 +1202,88 @@ async def handle_admin_manual_payments(update: Update, context: ContextTypes.DEF
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode='Markdown'
     )
+
+async def handle_server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle server selection callback"""
+    try:
+        logger.info("🎯 SERVER CALLBACK HANDLER TRIGGERED!")
+        query = update.callback_query
+        
+        # Parse callback data
+        callback_data = query.data
+        logger.info(f"🔍 DEBUG: Server callback data: {callback_data}")
+        
+        if not callback_data.startswith('srv:'):
+            logger.info(f"🔍 DEBUG: Callback doesn't start with 'srv:', skipping")
+            return
+        
+        parts = callback_data.split(':')
+        if len(parts) != 3:
+            await query.edit_message_text("❌ Invalid callback data")
+            return
+        
+        service_id = parts[1]
+        server_id = parts[2]
+        
+        logger.info(f"🔍 User {update.effective_user.id} selected server {server_id} for service {service_id}")
+        
+        # Initialize service database
+        from src.database.service_db import ServiceDatabase
+        service_db = ServiceDatabase()
+        await service_db.initialize()
+        
+        # Get service and server data
+        service = await service_db.get_service_by_id(service_id)
+        server = await service_db.get_server_by_id(server_id)
+        
+        if not service or not server:
+            await query.edit_message_text("❌ Service or server not found")
+            return
+        
+        service_name = service.get('name', 'Unknown')
+        server_name = server.get('name', 'Unknown Server')
+        
+        # Show processing message
+        await query.edit_message_text(
+            f"Processing your request… ⏳\n"
+            f"Service: {service_name}\n"
+            f"Server: {server_name}"
+        )
+        
+        # Call server API
+        logger.info(f"🌐 Calling API for server {server_name}")
+        api_result = await service_db.call_server_api(server, service_name)
+        
+        if api_result['success']:
+            # Extract number from API response
+            data = api_result['data']
+            number = data.get('number') or data.get('phone') or data.get('phone_number')
+            
+            if number:
+                await query.edit_message_text(
+                    f"From {server_name} ({service_name}): {number}"
+                )
+                logger.info(f"✅ Successfully returned number {number} from {server_name}")
+            else:
+                await query.edit_message_text(
+                    f"{server_name} is unavailable or returned no numbers. Try another server."
+                )
+                logger.warning(f"⚠️ Server {server_name} returned no number in response")
+        else:
+            await query.edit_message_text(
+                f"{server_name} is unavailable or returned no numbers. Try another server."
+            )
+            logger.error(f"❌ Server {server_name} API failed: {api_result.get('error', 'Unknown error')}")
+        
+    except Exception as e:
+        logger.error(f"❌ Error in handle_server_callback: {e}")
+        try:
+            await query.edit_message_text(
+                "❌ An error occurred while processing your request.\n"
+                "Please try again later."
+            )
+        except:
+            pass
 
 async def handle_unknown_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle unknown callback data"""

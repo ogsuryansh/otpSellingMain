@@ -459,3 +459,153 @@ async def handle_delete_all_data(update: Update, context: ContextTypes.DEFAULT_T
     except Exception as e:
         logger.error(f"Error in delete_all_data command: {e}")
         await update.message.reply_text("❌ An error occurred while processing the command.")
+
+async def handle_sync_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /sync command: Sync all data with website"""
+    try:
+        # Check if user is admin
+        config = BotConfig()
+        if not config.ADMIN_USER_ID or str(update.effective_user.id) != str(config.ADMIN_USER_ID):
+            await update.message.reply_text("❌ You don't have permission to use admin commands.")
+            return
+        
+        await update.message.reply_text("🔄 Starting data synchronization with website...")
+        
+        # Import service database for sync
+        from src.database.service_db import ServiceDatabase
+        service_db = ServiceDatabase()
+        
+        # Perform complete sync
+        sync_result = await service_db.sync_all_data_with_website()
+        
+        if sync_result["success"]:
+            message = "✅ Data synchronization completed!\n\n"
+            message += f"📊 Users: {sync_result['users']['synced_users']}/{sync_result['users']['total_users']} synced\n"
+            message += f"🔧 Services: {sync_result['services']['synced_services']}/{sync_result['services']['total_services']} synced\n"
+            message += f"🖥️ Servers: {sync_result['servers']['synced_servers']}/{sync_result['servers']['total_servers']} synced\n\n"
+            message += f"📈 Total synced: {sync_result['total_synced']}\n"
+            message += f"❌ Total failed: {sync_result['total_failed']}"
+        else:
+            message = f"❌ Data synchronization failed: {sync_result.get('error', 'Unknown error')}"
+        
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        logger.error(f"Error in sync_data command: {e}")
+        await update.message.reply_text("❌ Error during data synchronization.")
+
+async def handle_sync_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /syncusers command: Sync only user data with website"""
+    try:
+        # Check if user is admin
+        config = BotConfig()
+        if not config.ADMIN_USER_ID or str(update.effective_user.id) != str(config.ADMIN_USER_ID):
+            await update.message.reply_text("❌ You don't have permission to use admin commands.")
+            return
+        
+        await update.message.reply_text("🔄 Starting user data synchronization...")
+        
+        # Perform user sync
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        sync_result = await user_db.sync_all_users_with_website()
+        
+        if sync_result["success"]:
+            message = "✅ User data synchronization completed!\n\n"
+            message += f"📊 Total users: {sync_result['total_users']}\n"
+            message += f"✅ Synced: {sync_result['synced_users']}\n"
+            message += f"❌ Failed: {sync_result['failed_users']}"
+        else:
+            message = f"❌ User synchronization failed: {sync_result.get('error', 'Unknown error')}"
+        
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        logger.error(f"Error in sync_users command: {e}")
+        await update.message.reply_text("❌ Error during user synchronization.")
+
+async def handle_sync_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /syncservices command: Sync only service data with website"""
+    try:
+        # Check if user is admin
+        config = BotConfig()
+        if not config.ADMIN_USER_ID or str(update.effective_user.id) != str(config.ADMIN_USER_ID):
+            await update.message.reply_text("❌ You don't have permission to use admin commands.")
+            return
+        
+        await update.message.reply_text("🔄 Starting service data synchronization...")
+        
+        # Import service database for sync
+        from src.database.service_db import ServiceDatabase
+        service_db = ServiceDatabase()
+        
+        # Perform service sync
+        sync_result = await service_db.sync_services_with_website()
+        
+        if sync_result["success"]:
+            message = "✅ Service data synchronization completed!\n\n"
+            message += f"🔧 Total services: {sync_result['total_services']}\n"
+            message += f"✅ Synced: {sync_result['synced_services']}\n"
+            message += f"❌ Failed: {sync_result['failed_services']}"
+        else:
+            message = f"❌ Service synchronization failed: {sync_result.get('error', 'Unknown error')}"
+        
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        logger.error(f"Error in sync_services command: {e}")
+        await update.message.reply_text("❌ Error during service synchronization.")
+
+async def handle_check_sync_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /syncstatus command: Check sync status between bot and website"""
+    try:
+        # Check if user is admin
+        config = BotConfig()
+        if not config.ADMIN_USER_ID or str(update.effective_user.id) != str(config.ADMIN_USER_ID):
+            await update.message.reply_text("❌ You don't have permission to use admin commands.")
+            return
+        
+        await update.message.reply_text("🔍 Checking sync status...")
+        
+        # Get counts from bot database
+        user_db = UserDatabase()
+        if not hasattr(user_db, 'client') or user_db.client is None:
+            await user_db.initialize()
+        
+        bot_users_count = await user_db.users_collection.count_documents({})
+        
+        # Import service database
+        from src.database.service_db import ServiceDatabase
+        service_db = ServiceDatabase()
+        
+        bot_services_count = await service_db.services_collection.count_documents({})
+        bot_servers_count = await service_db.servers_collection.count_documents({})
+        
+        # Get counts from website database
+        website_users_count = await user_db.db['website_users'].count_documents({})
+        website_services_count = await service_db.db['services'].count_documents({})
+        website_servers_count = await service_db.db['servers'].count_documents({})
+        
+        message = "📊 Sync Status Report\n\n"
+        message += f"👥 Users:\n"
+        message += f"   Bot: {bot_users_count}\n"
+        message += f"   Website: {website_users_count}\n"
+        message += f"   Status: {'✅ Synced' if bot_users_count == website_users_count else '⚠️ Out of sync'}\n\n"
+        
+        message += f"🔧 Services:\n"
+        message += f"   Bot: {bot_services_count}\n"
+        message += f"   Website: {website_services_count}\n"
+        message += f"   Status: {'✅ Synced' if bot_services_count == website_services_count else '⚠️ Out of sync'}\n\n"
+        
+        message += f"🖥️ Servers:\n"
+        message += f"   Bot: {bot_servers_count}\n"
+        message += f"   Website: {website_servers_count}\n"
+        message += f"   Status: {'✅ Synced' if bot_servers_count == website_servers_count else '⚠️ Out of sync'}"
+        
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        logger.error(f"Error in check_sync_status command: {e}")
+        await update.message.reply_text("❌ Error checking sync status.")
